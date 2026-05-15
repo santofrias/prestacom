@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRESTACOM 2.0 - Control de Atrasos</title>
+    <link rel="stylesheet" href="css/variable.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--color-background);
+            color: var(--color-text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--color-background);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        header {
+            background-color: #C0392B; /* Rojo estricto para alertar morosidad */
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        /* Tarjeta de Pérdida o Total en Mora */
+        .danger-card {
+            background-color: #FDEDEC;
+            border-left: 5px solid #C0392B;
+            margin: 15px 20px 5px 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        danger-card span {
+            font-size: 0.85rem;
+            color: #7B241C;
+            font-weight: 600;
+        }
+
+        .danger-card strong {
+            font-size: 1.2rem;
+            color: #C0392B;
+        }
+
+        /* Lista de morosos */
+        .atrasos-list {
+            padding: 15px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .atraso-card {
+            background-color: var(--color-surface);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid rgba(0,0,0,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: opacity 0.3s;
+        }
+
+        .atraso-card.resuelto {
+            opacity: 0.5;
+        }
+
+        .atraso-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .atraso-meta {
+            font-size: 0.8rem;
+            color: #6B7280;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .alerta-dias {
+            color: #C0392B;
+            font-weight: 700;
+        }
+
+        .atraso-action {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-end;
+        }
+
+        .monto-mora {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #C0392B;
+        }
+
+        .btn-cobrar-mora {
+            background-color: #C0392B;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .badge-resuelto {
+            background-color: rgba(46, 204, 113, 0.15);
+            color: #27AE60;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* MODAL FLOTANTE */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background-color: white;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-header h2 {
+            font-size: 1.15rem;
+        }
+
+        .modal-header p {
+            font-size: 0.85rem;
+            color: #6B7280;
+            margin-top: 2px;
+        }
+
+        .modal-body label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .modal-body input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .modal-body input:focus {
+            outline: none;
+            border-color: #C0392B;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-cancelar {
+            flex: 1;
+            background-color: #E5E7EB;
+            color: var(--color-text-main);
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-confirmar {
+            flex: 1;
+            background-color: #C0392B;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <a href="index.html" class="back-btn">⬅</a>
+            <h1>Control de Atrasos</h1>
+        </header>
+
+        <div class="danger-card">
+            <span>Total en Atraso Catastrófico</span>
+            <strong id="total-mora">$0.00</strong>
+        </div>
+
+        <main class="atrasos-list" id="contenedor-atrasos">
+            <p style="text-align: center; padding: 20px; color: #6B7280;">Buscando reportes de morosidad...</p>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="modal-atraso">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-atraso-cliente">Cobrar Atraso</h2>
+                <p id="modal-atraso-sugerido">Deuda total vencida: $0.00</p>
+            </div>
+            <div class="modal-body">
+                <label for="monto-atraso-ingresado">Monto Recibido ($)</label>
+                <input type="number" id="monto-atraso-ingresado" step="0.01" min="0">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancelar" id="btn-cerrar-modal">Cancelar</button>
+                <button class="btn-confirmar" id="btn-guardar-mora">Confirmar Recibo</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5oHQtFWzLqY3JdpV_3pKY40rx00o6Gu4",
+            authDomain: "prestacom-36ebd.firebaseapp.com",
+            projectId: "prestacom-36ebd",
+            storageBucket: "prestacom-36ebd.firebasestorage.app",
+            messagingSenderId: "787618813060",
+            appId: "1:787618813060:web:8bbdc1bea7960cdbad5ed1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const idEmpresaLogueada = localStorage.getItem('id_empresa');
+        if (!idEmpresaLogueada) {
+            window.location.href = "login.html";
+        }
+
+        let totalMoraGlobal = 0.00;
+        let idPrestamoSeleccionado = null;
+        let deudaTotalSeleccionada = 0;
+        let datosCompletosPrestamo = null;
+        let cuotasVencidasSeleccionadas = [];
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await cargarControlAtrasos();
+        });
+
+        // Convierte string "DD-MM-YYYY" a objeto Date de JavaScript para comparar cálculos matemáticos
+        function parsearFechaString(fechaStr) {
+            const partes = fechaStr.split('-'); // [DD, MM, YYYY]
+            return new Date(partes[2], partes[1] - 1, partes[0]);
+        }
+
+        async function cargarControlAtrasos() {
+            const contenedor = document.getElementById('contenedor-atrasos');
+            contenedor.innerHTML = '<p style="text-align: center; padding: 20px; color: #6B7280;">Buscando morosidad en la nube...</p>';
+            
+            try {
+                const q = query(collection(db, "prestamos"), where("id_empresa", "==", idEmpresaLogueada), where("status", "==", "Activo"));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    contenedor.innerHTML = '<p style="text-align: center; padding: 20px; color: #6B7280;">¡Felicidades! No tienes carteras vencidas.</p>';
+                    document.getElementById('total-mora').innerText = "$0.00";
+                    return;
+                }
+
+                contenedor.innerHTML = "";
+                totalMoraGlobal = 0.00;
+                const hoy = new Date();
+                hoy.setHours(0,0,0,0); // Normalizar horas para comparar solo días calendario
+
+                querySnapshot.forEach((documento) => {
+                    const prestamo = documento.data();
+                    const idPrestamo = documento.id;
+
+                    // Filtrar todas las cuotas cuya fecha ya expiró y siguen sin pagarse
+                    const cuotasAtrasadas = prestamo.cuotas_detalle.filter(cuota => {
+                        if (cuota.status !== 'Pendiente') return false;
+                        const fechaVencimiento = parsearFechaString(cuota.fecha_vencimiento);
+                        return fechaVencimiento < hoy;
+                    });
+
+                    if (cuotasAtrasadas.length > 0) {
+                        // Calcular la deuda acumulada de esas cuotas caídas
+                        const sumaDeudaMora = cuotasAtrasadas.reduce((sum, c) => sum + c.monto_cuota, 0);
+                        totalMoraGlobal += sumaDeudaMora;
+
+                        // Calcular días de retraso basados en la cuota vencida más vieja
+                        const cuotaMasVieja = cuotasAtrasadas[0];
+                        const fechaVieja = parsearFechaString(cuotaMasVieja.fecha_vencimiento);
+                        const diferenciaTiempo = hoy.getTime() - fechaVieja.getTime();
+                        const diasRetraso = Math.floor(diferenciaTiempo / (1000 * 60 * 60 * 24));
+
+                        const card = document.createElement('div');
+                        card.className = "atraso-card";
+                        card.id = `mora-card-${idPrestamo}`;
+                        card.innerHTML = `
+                            <div class="atraso-info">
+                                <h3>${prestamo.nombre_cliente}</h3>
+                                <div class="atraso-meta">
+                                    <span>Debiendo: ${cuotasAtrasadas.length} ${cuotasAtrasadas.length === 1 ? 'cuota' : 'cuotas seguidas'}</span>
+                                    <span class="alerta-dias">⚠️ ${diasRetraso} días de retraso</span>
+                                </div>
+                            </div>
+                            <div class="atraso-action">
+                                <div class="monto-mora" id="monto-original-${idPrestamo}">$${sumaDeudaMora.toFixed(2)}</div>
+                                <button class="btn-cobrar-mora" id="btn-mora-${idPrestamo}">Cobrar</button>
+                                <span class="badge-resuelto" id="badge-${idPrestamo}"></span>
+                            </div>
+                        `;
+
+                        contenedor.appendChild(card);
+
+                        card.querySelector(`#btn-mora-${idPrestamo}`).addEventListener('click', () => {
+                            idPrestamoSeleccionado = idPrestamo;
+                            deudaTotalSeleccionada = sumaDeudaMora;
+                            datosCompletosPrestamo = prestamo;
+                            cuotasVencidasSeleccionadas = cuotasAtrasadas;
+
+                            abrirModalAtraso(prestamo.nombre_cliente, deudaTotalSeleccionada);
+                        });
+                    }
+                });
+
+                if (contenedor.innerHTML === "") {
+                    contenedor.innerHTML = '<p style="text-align: center; padding: 20px; color: #6B7280;">Todo limpio. Ningún deudor se ha pasado de su fecha de pago.</p>';
+                }
+
+                document.getElementById('total-mora').innerText = `$${totalMoraGlobal.toFixed(2)}`;
+
+            } catch (error) {
+                console.error("Error al auditar atrasos:", error);
+                contenedor.innerHTML = '<p style="text-align: center; padding: 20px; color: #C0392B;">Error al calcular carteras morosas.</p>';
+            }
+        }
+
+        function abrirModalAtraso(nombre, deudaTotal) {
+            document.getElementById('modal-atraso-cliente').innerText = `Cobrar Atraso a ${nombre}`;
+            document.getElementById('modal-atraso-sugerido').innerText = `Deuda total vencida: $${deudaTotal.toFixed(2)}`;
+            document.getElementById('monto-atraso-ingresado').value = deudaTotal;
+            document.getElementById('modal-atraso').classList.add('open');
+        }
+
+        function cerrarModalAtraso() {
+            document.getElementById('modal-atraso').classList.remove('open');
+            idPrestamoSeleccionado = null;
+            datosCompletosPrestamo = null;
+            cuotasVencidasSeleccionadas = [];
+        }
+
+        async function procesarPagoAtraso() {
+            const montoRecibido = parseFloat(document.getElementById('monto-atraso-ingresado').value);
+
+            if (isNaN(montoRecibido) || montoRecibido < 0) {
+                alert("Por favor, ingresa un monto válido.");
+                return;
+            }
+
+            const btnConfirmar = document.getElementById('btn-guardar-mora');
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerText = "Registrando...";
+
+            try {
+                let fondoDisponible = montoRecibido;
+                const idsCuotasVencidas = cuotasVencidasSeleccionadas.map(c => c.numero_cuota);
+
+                // Recorremos el desglose original de cuotas del deudor y saldamos las atrasadas en orden
+                const cuotasModificadas = datosCompletosPrestamo.cuotas_detalle.map(cuota => {
+                    if (idsCuotasVencidas.includes(cuota.numero_cuota) && fondoDisponible > 0) {
+                        if (fondoDisponible >= cuota.monto_cuota) {
+                            fondoDisponible -= cuota.monto_cuota;
+                            return {
+                                ...cuota,
+                                status: 'Pagado',
+                                monto_pagado: cuota.monto_cuota,
+                                fecha_pago_real: new Date().toISOString()
+                            };
+                        } else {
+                            // Si lo que pagó no le dio para saldar la cuota entera, se registra un abono parcial
+                            const abonoRealizado = fondoDisponible;
+                            fondoDisponible = 0;
+                            return {
+                                ...cuota,
+                                status: 'Abonado', 
+                                monto_pagado: abonoRealizado,
+                                fecha_pago_real: new Date().toISOString()
+                            };
+                        }
+                    }
+                    return cuota;
+                });
+
+                // Contar cuántas cuotas quedan con estatus Pendiente o Abonado en total
+                const cuotasRestantes = cuotasModificadas.filter(c => c.status !== 'Pagado').length;
+                const nuevoBalancePendiente = Math.max(0, datosCompletosPrestamo.balance_pendiente - montoRecibido);
+                const nuevoStatusPrestamo = cuotasRestantes === 0 ? 'Finalizado' : 'Activo';
+
+                // Guardar los cambios estructurales en Firebase Firestore
+                const prestamoRef = doc(db, "prestamos", idPrestamoSeleccionado);
+                await updateDoc(prestamoRef, {
+                    cuotas_detalle: cuotasModificadas,
+                    balance_pendiente: nuevoBalancePendiente,
+                    cuotas_restantes: cuotasRestantes,
+                    status: nuevoStatusPrestamo
+                });
+
+                // Efecto visual directo en la UI
+                const tarjeta = document.getElementById(`mora-card-${idPrestamoSeleccionado}`);
+                const boton = tarjeta.querySelector('.btn-cobrar-mora');
+                const badge = document.getElementById(`badge-${idPrestamoSeleccionado}`);
+                const visorMonto = document.getElementById(`monto-original-${idPrestamoSeleccionado}`);
+
+                boton.style.display = 'none';
+
+                if (montoRecibido === deudaTotalSeleccionada) {
+                    badge.innerText = "✓ Saldo Vencido Cobrado";
+                    badge.style.backgroundColor = "rgba(46, 204, 113, 0.15)";
+                    badge.style.color = "#27AE60";
+                } else {
+                    badge.innerText = `✓ Abonó parcial $${montoRecibido.toFixed(2)}`;
+                    badge.style.backgroundColor = "rgba(241, 198, 15, 0.15)";
+                    badge.style.color = "#D4AC0D";
+                    visorMonto.style.color = "#D4AC0D";
+                }
+
+                badge.style.display = 'block';
+                tarjeta.classList.add('resuelto');
+
+                // Descontar la cantidad amortizada del indicador de pérdida de la oficina
+                totalMoraGlobal -= montoRecibido;
+                document.getElementById('total-mora').innerText = `$${Math.max(0, totalMoraGlobal).toFixed(2)}`;
+
+                cerrarModalAtraso();
+                alert("¡Cobro de mora guardado con éxito!");
+
+            } catch (error) {
+                console.error("Error al actualizar la mora:", error);
+                alert("No se pudo registrar el pago de atraso.");
+            } finally {
+                btnConfirmar.disabled = false;
+                btnConfirmar.innerText = "Confirmar Recibo";
+            }
+        }
+
+        document.getElementById('btn-cerrar-modal').addEventListener('click', cerrarModalAtraso);
+        document.getElementById('btn-guardar-mora').addEventListener('click', procesarPagoAtraso);
+    </script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRESTACOM 2.0 - Préstamos</title>
+    <link rel="stylesheet" href="css/variable.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--color-background);
+            color: var(--color-text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--color-background);
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        /* Filtros superiores de estado */
+        .filter-container {
+            display: flex;
+            gap: 8px;
+            padding: 15px 20px;
+            background-color: var(--color-surface);
+            border-bottom: 1px solid #E5E7EB;
+            overflow-x: auto;
+        }
+
+        .filter-btn {
+            padding: 8px 14px;
+            border: 1px solid #D1D5DB;
+            background-color: #FAFAFA;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--color-text-main);
+            white-space: nowrap;
+        }
+
+        .filter-btn.active {
+            background-color: #FF6600; /* Mamei institucional */
+            color: white;
+            border-color: #FF6600;
+        }
+
+        /* Contenedor de la lista de préstamos */
+        .loans-list {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Tarjeta de Préstamo */
+        .loan-card {
+            background-color: var(--color-surface);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .loan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .loan-header h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+        }
+
+        .loan-date {
+            font-size: 0.75rem;
+            color: #6B7280;
+            margin-top: 2px;
+        }
+
+        /* Badges de estados */
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .status-al-dia {
+            background-color: rgba(46, 204, 113, 0.15);
+            color: #27AE60;
+        }
+
+        .status-atrasado {
+            background-color: rgba(231, 76, 60, 0.15);
+            color: #C0392B;
+        }
+
+        .status-finalizado {
+            background-color: rgba(156, 163, 175, 0.15);
+            color: #4B5563;
+        }
+
+        /* Detalles numéricos del préstamo */
+        .loan-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            background-color: #FAFAFA;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        .detail-item span {
+            display: block;
+            color: #6B7280;
+            font-size: 0.75rem;
+            margin-bottom: 2px;
+        }
+
+        .detail-item strong {
+            font-size: 0.95rem;
+            color: var(--color-text-main);
+        }
+
+        .detail-item .mamei-text {
+            color: #FF6600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <a href="index.html" class="back-btn">⬅</a>
+            <h1>Lista de Préstamos</h1>
+        </header>
+
+        <div class="filter-container">
+            <button class="filter-btn active" id="btn-filtro-todos">Todos</button>
+            <button class="filter-btn" id="btn-filtro-aldia">Al Día</button>
+            <button class="filter-btn" id="btn-filtro-atrasado">Atrasados</button>
+        </div>
+
+        <main class="loans-list" id="contenedor-prestamos">
+            <p style="text-align: center; padding: 20px; color: #6B7280;">Cargando cartera de préstamos...</p>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5oHQtFWzLqY3JdpV_3pKY40rx00o6Gu4",
+            authDomain: "prestacom-36ebd.firebaseapp.com",
+            projectId: "prestacom-36ebd",
+            storageBucket: "prestacom-36ebd.firebasestorage.app",
+            messagingSenderId: "787618813060",
+            appId: "1:787618813060:web:8bbdc1bea7960cdbad5ed1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const idEmpresaLogueada = localStorage.getItem('id_empresa');
+        if (!idEmpresaLogueada) {
+            window.location.href = "login.html";
+        }
+
+        let filtroActual = 'todos';
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await cargarPrestamosNube();
+            configurarFiltrosUI();
+        });
+
+        function parsearFechaString(fechaStr) {
+            const partes = fechaStr.split('-');
+            return new Date(partes[2], partes[1] - 1, partes[0]);
+        }
+
+        async function cargarPrestamosNube() {
+            const contenedor = document.getElementById('contenedor-prestamos');
+            
+            try {
+                // Traemos todos los préstamos de la empresa ordenados por fecha de creación (los más nuevos primero)
+                const q = query(
+                    collection(db, "prestamos"), 
+                    where("id_empresa", "==", idEmpresaLogueada)
+                );
+                
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    contenedor.innerHTML = '<p style="text-align: center; padding: 20px; color: #6B7280;">No se han registrado préstamos en esta cuenta.</p>';
+                    return;
+                }
+
+                contenedor.innerHTML = "";
+                const hoy = new Date();
+                hoy.setHours(0,0,0,0);
+
+                // Convertimos el snapshot a array para poder ordenarlo de forma manual por si no tienes índice compuesto configurado
+                let listaDocs = [];
+                querySnapshot.forEach(doc => listaDocs.push(doc.data()));
+                
+                // Ordenar por fecha de registro descendiente de forma segura
+                listaDocs.sort((a, b) => new Date(b.fecha_registro) - new Date(a.fecha_registro));
+
+                listaDocs.forEach((prestamo) => {
+                    let estadoCalculado = 'al-dia';
+                    let textoBadge = 'Al Día';
+                    let claseBadge = 'status-al-dia';
+
+                    if (prestamo.status === 'Finalizado') {
+                        estadoCalculado = 'finalizado'; // Para control interno aunque no tenga botón arriba
+                        textoBadge = 'Liquidado';
+                        claseBadge = 'status-finalizado';
+                    } else {
+                        // Si está activo, revisamos si tiene alguna cuota atrasada con respecto a hoy
+                        const tieneMora = prestamo.cuotas_detalle.some(cuota => {
+                            if (cuota.status !== 'Pendiente') return false;
+                            const vencimiento = parsearFechaString(cuota.fecha_vencimiento);
+                            return vencimiento < hoy;
+                        });
+
+                        if (tieneMora) {
+                            estadoCalculado = 'atrasado';
+                            textoBadge = 'Atrasado';
+                            claseBadge = 'status-atrasado';
+                        }
+                    }
+
+                    // Obtener la fecha de la última cuota para poner el fin del préstamo
+                    const ultimaCuota = prestamo.cuotas_detalle[prestamo.cuotas_detalle.length - 1];
+                    const fechaFin = ultimaCuota ? ultimaCuota.fecha_vencimiento : 'N/A';
+
+                    const tarjeta = document.createElement('div');
+                    tarjeta.className = "loan-card";
+                    tarjeta.setAttribute('data-status', estadoCalculado);
+                    
+                    tarjeta.innerHTML = `
+                        <div class="loan-header">
+                            <div>
+                                <h3>${prestamo.nombre_cliente}</h3>
+                                <div class="loan-date">Fin: ${fechaFin} • ${prestamo.modalidad || 'Diario'}</div>
+                            </div>
+                            <span class="status-badge ${claseBadge}">${textoBadge}</span>
+                        </div>
+                        <div class="loan-details">
+                            <div class="detail-item">
+                                <span>Monto Prestado</span>
+                                <strong>$${parseFloat(prestamo.monto_solicitado).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
+                            </div>
+                            <div class="detail-item">
+                                <span>Balance Pendiente</span>
+                                <strong class="mamei-text">$${parseFloat(prestamo.balance_pendiente).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
+                            </div>
+                        </div>
+                    `;
+
+                    contenedor.appendChild(tarjeta);
+                });
+
+                // Re-aplicar el filtro actual por si se refresca la información
+                ejecutarFiltroPantalla(filtroActual);
+
+            } catch (error) {
+                console.error("Error al descargar la lista de préstamos:", error);
+                contenedor.innerHTML = '<p style="text-align: center; padding: 20px; color: #C0392B;">Error al conectar con la base de datos.</p>';
+            }
+        }
+
+        function configurarFiltrosUI() {
+            document.getElementById('btn-filtro-todos').addEventListener('click', function() {
+                cambiarEstiloBotonActivo(this);
+                ejecutarFiltroPantalla('todos');
+            });
+            document.getElementById('btn-filtro-aldia').addEventListener('click', function() {
+                cambiarEstiloBotonActivo(this);
+                ejecutarFiltroPantalla('al-dia');
+            });
+            document.getElementById('btn-filtro-atrasado').addEventListener('click', function() {
+                cambiarEstiloBotonActivo(this);
+                ejecutarFiltroPantalla('atrasado');
+            });
+        }
+
+        function cambiarEstiloBotonActivo(botonActivo) {
+            const botones = document.getElementsByClassName('filter-btn');
+            for (let i = 0; i < botones.length; i++) {
+                botones[i].classList.remove('active');
+            }
+            botonActivo.classList.add('active');
+        }
+
+        function ejecutarFiltroPantalla(estado) {
+            filtroActual = estado;
+            const tarjetas = document.getElementsByClassName('loan-card');
+            
+            for (let i = 0; i < tarjetas.length; i++) {
+                const estadoTarjeta = tarjetas[i].getAttribute('data-status');
+
+                if (estado === 'todos') {
+                    // Si el filtro es todos, mostramos los que están al día o atrasados (los Liquidados/Finalizados quedan ocultos para no saturar, o puedes quitarlos si quieres verlos)
+                    if (estadoTarjeta === 'al-dia' || estadoTarjeta === 'atrasado') {
+                        tarjetas[i].style.display = "flex";
+                    } else {
+                        tarjetas[i].style.display = "none";
+                    }
+                } else if (estadoTarjeta === estado) {
+                    tarjetas[i].style.display = "flex";
+                } else {
+                    tarjetas[i].style.display = "none";
+                }
+            }
+        }
+    </script>
+</body>
+</html>

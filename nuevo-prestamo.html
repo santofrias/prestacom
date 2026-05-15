@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRESTACOM 2.0 - Nuevo Préstamo</title>
+    <link rel="stylesheet" href="css/variable.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--color-background);
+            color: var(--color-text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--color-background);
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        form {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 100px; 
+        }
+
+        .card {
+            background-color: var(--color-surface);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            color: var(--color-primary);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 102, 0, 0.1);
+            padding-bottom: 4px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 12px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background-color: #FAFAFA;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background-color: #FFFFFF;
+        }
+
+        .info-termino {
+            background-color: rgba(255, 102, 0, 0.05);
+            border-left: 4px solid var(--color-primary);
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.95rem;
+        }
+
+        .info-termino strong {
+            color: var(--color-primary);
+        }
+
+        .table-container {
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: #F3F4F6;
+            padding: 10px;
+            font-weight: 700;
+            border-bottom: 2px solid #E5E7EB;
+            text-align: left;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .status-badge {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .status-pendiente {
+            background-color: rgba(241, 198, 15, 0.15);
+            color: #D4AC0D;
+        }
+
+        .footer-actions {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--color-background);
+            padding: 15px 20px;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.08);
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-calcular {
+            flex: 1;
+            background-color: #E5E7EB;
+            color: var(--color-text-main);
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-generar {
+            flex: 1;
+            background-color: #FF6600;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(255, 102, 0, 0.2);
+        }
+
+        .btn-generar:active {
+            background-color: #E05500;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <a href="index.html" class="back-btn">⬅</a>
+            <h1>Nuevo Préstamo</h1>
+        </header>
+
+        <form id="form-prestamo">
+            
+            <div class="card">
+                <div class="card-title">Asignar Cliente</div>
+                <div class="input-group">
+                    <label for="select-cliente">Selecciona el Cliente</label>
+                    <select id="select-cliente" required>
+                        <option value="">Cargando clientes de la nube...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Condiciones del Préstamo</div>
+                
+                <div class="input-group">
+                    <label for="fecha-inicio">Fecha de Entrega (Inicio)</label>
+                    <input type="date" id="fecha-inicio" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="monto">Monto Prestado ($)</label>
+                    <input type="number" id="monto" placeholder="Ej. 10000" min="1" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="interes">Tasa de Interés (%)</label>
+                    <input type="number" id="interes" placeholder="Ej. 20" min="0" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="modalidad">Modalidad de Pago</label>
+                    <select id="modalidad">
+                        <option value="1">Diario</option>
+                        <option value="7">Semanal</option>
+                        <option value="15">Quincenal</option>
+                        <option value="30">Mensual</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="cuotas">Cantidad de Cuotas</label>
+                    <input type="number" id="cuotas" placeholder="Ej. 6" min="1" required>
+                </div>
+            </div>
+
+            <div class="card" id="detalles-card" style="display: none;">
+                <div class="card-title">Detalles del Desglose</div>
+                
+                <div class="info-termino" id="info-resumen-ganancias">
+                    El préstamo finalizará el: <strong id="fecha-termino-texto">--/--/----</strong>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cuota</th>
+                                <th>Fecha</th>
+                                <th>Monto</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-cuotas-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="footer-actions">
+                <button type="button" class="btn-calcular" id="btn-calcular-id">Calcular Préstamo</button>
+                <button type="submit" class="btn-generar" id="btn-generar-id">Generar Préstamo</button>
+            </div>
+
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5oHQtFWzLqY3JdpV_3pKY40rx00o6Gu4",
+            authDomain: "prestacom-36ebd.firebaseapp.com",
+            projectId: "prestacom-36ebd",
+            storageBucket: "prestacom-36ebd.firebasestorage.app",
+            messagingSenderId: "787618813060",
+            appId: "1:787618813060:web:8bbdc1bea7960cdbad5ed1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const idEmpresaLogueada = localStorage.getItem('id_empresa');
+        const nombreUsuarioLogueado = localStorage.getItem('nombre_usuario');
+
+        if (!idEmpresaLogueada) {
+            window.location.href = "login.html";
+        }
+
+        let cuotasCalculadas = [];
+        let fechaFinalPrestamo = "";
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const hoy = new Date();
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const año = hoy.getFullYear();
+            document.getElementById('fecha-inicio').value = `${año}-${mes}-${dia}`;
+
+            await cargarClientesDesplegable();
+        });
+
+        async function cargarClientesDesplegable() {
+            const selectCliente = document.getElementById('select-cliente');
+            
+            try {
+                let querySnapshot = await getDocs(query(collection(db, "clientes_prestamo"), where("id_empresa", "==", idEmpresaLogueada)));
+                
+                selectCliente.innerHTML = '<option value="">-- Elige un deudor --</option>';
+
+                if (querySnapshot.empty) {
+                    selectCliente.innerHTML = '<option value="">No tienes clientes registrados aún</option>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const datos = doc.data();
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.setAttribute('data-nombre', datos.nombre);
+                    option.textContent = `${datos.nombre} (${datos.ruta_sector || 'Sin sector'})`;
+                    selectCliente.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error("Error cargando clientes:", error);
+                selectCliente.innerHTML = '<option value="">Error al cargar la lista</option>';
+            }
+        }
+
+        function formatearFechaEspanol(fecha) {
+            const dia = String(fecha.getDate()).padStart(2, '0');
+            const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+            const año = fecha.getFullYear();
+            return `${dia}-${mes}-${año}`;
+        }
+
+        function verificarCalculo() {
+            const fechaInput = document.getElementById('fecha-inicio').value;
+            const monto = parseFloat(document.getElementById('monto').value);
+            const interesPorcentaje = parseFloat(document.getElementById('interes').value);
+            const diasModalidad = parseInt(document.getElementById('modalidad').value);
+            const totalCuotas = parseInt(document.getElementById('cuotas').value);
+            const select = document.getElementById('select-cliente');
+
+            if (!select.value || !fechaInput || isNaN(monto) || isNaN(interesPorcentaje) || isNaN(totalCuotas) || monto <= 0 || totalCuotas <= 0) {
+                alert("Por favor, selecciona un cliente, ingresa una fecha válida y llena todos los campos.");
+                return false;
+            }
+
+            const gananciaInteres = monto * (interesPorcentaje / 100);
+            const totalPagar = monto + gananciaInteres;
+            const valorCuota = (totalPagar / totalCuotas).toFixed(2);
+
+            const tbody = document.getElementById('tabla-cuotas-body');
+            tbody.innerHTML = ""; 
+            cuotasCalculadas = []; 
+
+            const partesFecha = fechaInput.split('-');
+            let fechaCorriente = new Date(partesFecha[0], partesFecha[1] - 1, partesFecha[2]);
+
+            for (let i = 1; i <= totalCuotas; i++) {
+                fechaCorriente.setDate(fechaCorriente.getDate() + diasModalidad);
+                const fechaFormateada = formatearFechaEspanol(fechaCorriente);
+
+                cuotasCalculadas.push({
+                    numero_cuota: i,
+                    fecha_vencimiento: fechaFormateada,
+                    monto_cuota: Number(valorCuota),
+                    monto_pagado: 0,
+                    status: 'Pendiente'
+                });
+
+                const fila = `
+                    <tr>
+                        <td>#${i}</td>
+                        <td>${fechaFormateada}</td>
+                        <td><strong>$${valorCuota}</strong></td>
+                        <td><span class="status-badge status-pendiente">Pendiente</span></td>
+                    </tr>
+                `;
+                tbody.innerHTML += fila;
+
+                if (i === totalCuotas) {
+                    fechaFinalPrestamo = fechaFormateada;
+                }
+            }
+
+            // Inyección del módulo visual de ganancias sugerido por el prestamista
+            const infoResumen = document.getElementById('info-resumen-ganancias');
+            infoResumen.innerHTML = `
+                <div style="margin-bottom: 8px;">El préstamo finalizará el: <strong>${fechaFinalPrestamo}</strong></div>
+                <hr style="border: 0; border-top: 1px solid rgba(255, 102, 0, 0.15); margin: 8px 0;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 5px;">
+                    <span>Capital Entregado:</span> <strong>$${monto.toLocaleString()}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #27AE60; margin-top: 3px;">
+                    <span>Ganancia por Interés (${interesPorcentaje}%):</span> <strong>+$${gananciaInteres.toLocaleString()}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 1.05rem; margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(0,0,0,0.1);">
+                    <span style="color: var(--color-primary); font-weight: bold;">Total Neto a Cobrar:</span> <strong style="color: var(--color-primary); font-size: 1.1rem;">$${totalPagar.toLocaleString()}</strong>
+                </div>
+            `;
+
+            document.getElementById('detalles-card').style.display = 'block';
+            return true;
+        }
+
+        document.getElementById('btn-calcular-id').addEventListener('click', verificarCalculo);
+
+        document.getElementById('form-prestamo').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (cuotasCalculadas.length === 0) {
+                const calculoOk = verificarCalculo();
+                if (!calculoOk) return;
+            }
+
+            const btnGenerar = document.getElementById('btn-generar-id');
+            btnGenerar.disabled = true;
+            btnGenerar.innerText = "Registrando préstamo...";
+
+            const selectElement = document.getElementById('select-cliente');
+            const idCliente = selectElement.value;
+            const nombreCliente = selectElement.options[selectElement.selectedIndex].getAttribute('data-nombre');
+
+            const nuevoPrestamo = {
+                id_empresa: idEmpresaLogueada,
+                id_cliente: idCliente,
+                nombre_cliente: nombreCliente,
+                fecha_inicio: document.getElementById('fecha-inicio').value,
+                fecha_termino: fechaFinalPrestamo,
+                monto_original: Number(document.getElementById('monto').value),
+                tasa_interes: Number(document.getElementById('interes').value),
+                modalidad_dias: parseInt(document.getElementById('modalidad').value),
+                cuotas_totales: parseInt(document.getElementById('cuotas').value),
+                cuotas_restantes: parseInt(document.getElementById('cuotas').value),
+                balance_pendiente: Number(document.getElementById('monto').value) + (Number(document.getElementById('monto').value) * (Number(document.getElementById('interes').value) / 100)),
+                status: 'Activo',
+                fecha_registro: new Date().toISOString(),
+                creado_por: nombreUsuarioLogueado,
+                cuotas_detalle: cuotasCalculadas
+            };
+
+            try {
+                await addDoc(collection(db, "prestamos"), nuevoPrestamo);
+                alert(`¡Préstamo para ${nombreCliente} generado con éxito!`);
+                window.location.href = "index.html";
+            } catch (error) {
+                console.error("Error al registrar préstamo:", error);
+                alert("Hubo un error de conexión al salvar el préstamo.");
+                btnGenerar.disabled = false;
+                btnGenerar.innerText = "Generar Préstamo";
+            }
+        });
+    </script>
+
+</body>
+</html>

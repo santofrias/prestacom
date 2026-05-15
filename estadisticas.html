@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRESTACOM 2.0 - Estadísticas</title>
+    <link rel="stylesheet" href="css/variable.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--color-background);
+            color: var(--color-text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--color-background);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        header {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 15px;
+            display: inline-block;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-bottom: 90px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .stat-card {
+            background-color: var(--color-surface);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .stat-card.full-width {
+            grid-column: span 2;
+            border-left: 5px solid var(--color-primary);
+        }
+
+        .stat-card span {
+            font-size: 0.75rem;
+            color: #6B7280;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .stat-card strong {
+            font-size: 1.3rem;
+            color: var(--color-text-main);
+        }
+
+        .stat-card.ganancias strong {
+            color: #27AE60;
+        }
+
+        .stat-card.riesgo strong {
+            color: #C0392B;
+        }
+
+        .analysis-card {
+            background-color: var(--color-surface);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .analysis-title {
+            font-size: 0.85rem;
+            color: var(--color-primary);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 102, 0, 0.1);
+            padding-bottom: 4px;
+        }
+
+        .analysis-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #F3F4F6;
+        }
+
+        .analysis-row:last-child {
+            border-bottom: none;
+        }
+
+        .analysis-row .label {
+            font-weight: 600;
+        }
+
+        .analysis-row .value {
+            font-weight: 700;
+        }
+
+        .progress-container {
+            margin-top: 5px;
+            background-color: #E5E7EB;
+            border-radius: 10px;
+            height: 8px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background-color: #27AE60;
+            height: 100%;
+            width: 0%; /* Inicia en cero para animarse dinámicamente con JS */
+            transition: width 0.5s ease-in-out;
+        }
+
+        .footer-actions {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--color-background);
+            padding: 15px 20px;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.08);
+            z-index: 100;
+        }
+
+        .btn-volver {
+            display: block;
+            width: 100%;
+            background-color: #E5E7EB;
+            color: var(--color-text-main);
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .btn-volver:active {
+            background-color: #D1D5DB;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <a href="index.html" class="back-btn">⬅</a>
+            <h1>Estadísticas Generales</h1>
+        </header>
+
+        <div class="content">
+            
+            <div class="stats-grid">
+                <div class="stat-card full-width">
+                    <span>Capital Activo en la Calle</span>
+                    <strong id="stat-capital-calle">$0.00</strong>
+                </div>
+
+                <div class="stat-card ganancias">
+                    <span>Intereses Totales</span>
+                    <strong id="stat-intereses">+$0.00</strong>
+                </div>
+
+                <div class="stat-card">
+                    <span>Cobrado este Mes</span>
+                    <strong id="stat-cobrado-mes">$0.00</strong>
+                </div>
+
+                <div class="stat-card riesgo">
+                    <span>Capital en Mora</span>
+                    <strong id="stat-mora">$0.00</strong>
+                </div>
+
+                <div class="stat-card">
+                    <span>Préstamos Activos</span>
+                    <strong id="stat-prestamos-activos">0</strong>
+                </div>
+            </div>
+
+            <div class="analysis-card">
+                <div class="analysis-title">Salud del Negocio</div>
+                <div class="analysis-row">
+                    <span class="label">Rendimiento Cobros (Al Día)</span>
+                    <span class="value" id="salud-porcentaje" style="color: #27AE60;">0.0%</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="salud-barra"></div>
+                </div>
+            </div>
+
+            <div class="analysis-card">
+                <div class="analysis-title">Rendimiento Proyectado</div>
+                <div class="analysis-row">
+                    <span class="label">Cartera Total Registrada</span>
+                    <span id="analisis-cartera-total" class="value">$0.00</span>
+                </div>
+                <div class="analysis-row">
+                    <span class="label">Créditos Liquidados</span>
+                    <span id="analisis-prestamos-finalizados" class="value">0</span>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="footer-actions">
+            <a href="index.html" class="btn-volver">Volver al Menú Principal</a>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5oHQtFWzLqY3JdpV_3pKY40rx00o6Gu4",
+            authDomain: "prestacom-36ebd.firebaseapp.com",
+            projectId: "prestacom-36ebd",
+            storageBucket: "prestacom-36ebd.firebasestorage.app",
+            messagingSenderId: "787618813060",
+            appId: "1:787618813060:web:8bbdc1bea7960cdbad5ed1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const idEmpresaLogueada = localStorage.getItem('id_empresa');
+        if (!idEmpresaLogueada) {
+            window.location.href = "login.html";
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await calcularMétricasFinancieras();
+        });
+
+        function parsearFechaString(fechaStr) {
+            const partes = fechaStr.split('-');
+            return new Date(partes[2], partes[1] - 1, partes[0]);
+        }
+
+        async function calcularMétricasFinancieras() {
+            try {
+                const q = query(collection(db, "prestamos"), where("id_empresa", "==", idEmpresaLogueada));
+                const querySnapshot = await getDocs(q);
+
+                let capitalEnCalle = 0;
+                let interesesTotales = 0;
+                let cobradoMesActual = 0;
+                let capitalEnMora = 0;
+                let prestamosActivosContador = 0;
+                let prestamosFinalizadosContador = 0;
+                let carteraTotalHistorica = 0;
+
+                let totalCuotasEvaluadas = 0;
+                let cuotasSanasOAlDia = 0;
+
+                const hoy = new Date();
+                hoy.setHours(0,0,0,0);
+
+                const mesActual = hoy.getMonth(); // 0 = Enero, 4 = Mayo, etc.
+                const anoActual = hoy.getFullYear();
+
+                querySnapshot.forEach((doc) => {
+                    const prestamo = doc.data();
+                    carteraTotalHistorica += parseFloat(prestamo.monto_solicitado || 0);
+
+                    if (prestamo.status === 'Finalizado') {
+                        prestamosFinalizadosContador++;
+                    }
+
+                    if (prestamo.status === 'Activo') {
+                        prestamosActivosContador++;
+                        capitalEnCalle += parseFloat(prestamo.balance_pendiente || 0);
+                        interesesTotales += parseFloat(prestamo.monto_interes || 0);
+
+                        // Auditar cuota por cuota dentro del arreglo del préstamo activo
+                        prestamo.cuotas_detalle.forEach((cuota) => {
+                            totalCuotasEvaluadas++;
+
+                            // 1. Validar Mora: Cuota pendiente cuya fecha ya expiró
+                            if (cuota.status === 'Pendiente') {
+                                const vencimiento = parsearFechaString(cuota.fecha_vencimiento);
+                                if (vencimiento < hoy) {
+                                    capitalEnMora += cuota.monto_cuota;
+                                } else {
+                                    cuotasSanasOAlDia++; // Sigue a tiempo
+                                }
+                            }
+
+                            // Si ya está pagada de forma correcta, cuenta como parte de la salud financiera del negocio
+                            if (cuota.status === 'Pagado') {
+                                cuotasSanasOAlDia++;
+                            }
+
+                            // 2. Validar Recaudación del Mes Actual (Abonos o pagos totales caídos en este mes calendario)
+                            if (cuota.fecha_pago_real) {
+                                const fechaPagoRealObj = new Date(cuota.fecha_pago_real);
+                                if (fechaPagoRealObj.getMonth() === mesActual && fechaPagoRealObj.getFullYear() === anoActual) {
+                                    cobradoMesActual += parseFloat(cuota.monto_pagado || cuota.monto_cuota);
+                                }
+                            }
+                        });
+                    }
+                });
+
+                // Formatear salidas numéricas en pantalla con estándar internacional
+                document.getElementById('stat-capital-calle').innerText = `$${capitalEnCalle.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                document.getElementById('stat-intereses').innerText = `+$${interesesTotales.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                document.getElementById('stat-cobrado-mes').innerText = `$${cobradoMesActual.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                document.getElementById('stat-mora').innerText = `$${capitalEnMora.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                document.getElementById('stat-prestamos-activos').innerText = prestamosActivosContador;
+                
+                document.getElementById('analisis-cartera-total').innerText = `$${carteraTotalHistorica.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                document.getElementById('analisis-prestamos-finalizados').innerText = prestamosFinalizadosContador;
+
+                // Calcular el porcentaje real de la salud operativa de la empresa
+                let porcentajeSalud = 100;
+                if (totalCuotasEvaluadas > 0) {
+                    porcentajeSalud = (cuotasSanasOAlDia / totalCuotasEvaluadas) * 100;
+                }
+
+                document.getElementById('salud-porcentaje').innerText = `${porcentajeSalud.toFixed(1)}%`;
+                document.getElementById('salud-barra').style.width = `${porcentajeSalud}%`;
+
+                // Ajustar color visual de la barra según el resultado matemático
+                if (porcentajeSalud < 70) {
+                    document.getElementById('salud-barra').style.backgroundColor = "#C0392B"; // Alerta roja si cae mucho
+                    document.getElementById('salud-porcentaje').style.color = "#C0392B";
+                } else if (porcentajeSalud < 85) {
+                    document.getElementById('salud-barra').style.backgroundColor = "#D4AC0D"; // Amarillo preventivo
+                    document.getElementById('salud-porcentaje').style.color = "#D4AC0D";
+                } else {
+                    document.getElementById('salud-barra').style.backgroundColor = "#27AE60"; // Verde óptimo
+                    document.getElementById('salud-porcentaje').style.color = "#27AE60";
+                }
+
+            } catch (error) {
+                console.error("Error al compilar el cuadro de estadísticas generales:", error);
+                alert("Hubo un fallo al sincronizar los balances generales.");
+            }
+        }
+    </script>
+</body>
+</html>

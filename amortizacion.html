@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRESTACOM 2.0 - Amortización</title>
+    <link rel="stylesheet" href="css/variable.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--color-background);
+            color: var(--color-text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--color-background);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Barra superior */
+        header {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        /* Contenedor del contenido */
+        .content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--color-surface);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            color: var(--color-primary);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 102, 0, 0.1);
+            padding-bottom: 4px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 12px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background-color: #FAFAFA;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background-color: #FFFFFF;
+        }
+
+        /* Botón Calcular Mamei */
+        .calc-btn {
+            width: 100%;
+            background-color: #FF6600;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(255, 102, 0, 0.2);
+        }
+
+        /* Estilos de la tabla de Amortización (Inspirado en la referencia) */
+        .table-container {
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: #F3F4F6;
+            color: var(--color-text-main);
+            padding: 10px;
+            font-weight: 700;
+            border-bottom: 2px solid #E5E7EB;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        /* Estados de la cuota */
+        .status-badge {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .status-pendiente {
+            background-color: rgba(241, 198, 15, 0.15);
+            color: #D4AC0D;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <a href="index.html" class="back-btn">⬅</a>
+            <h1>Amortización del Préstamo</h1>
+        </header>
+
+        <div class="content">
+            <div class="card">
+                <div class="card-title">Datos del Préstamo</div>
+                
+                <div class="input-group">
+                    <label for="monto">Monto Solicitado ($)</label>
+                    <input type="number" id="monto" placeholder="Ej. 10000" min="1" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="interes">Tasa de Interés (%)</label>
+                    <input type="number" id="interes" placeholder="Ej. 20" min="0" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="modalidad">Modalidad de Cobro</label>
+                    <select id="modalidad">
+                        <option value="1">Diario</option>
+                        <option value="7">Semanal</option>
+                        <option value="15">Quincenal</option>
+                        <option value="30">Mensual</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="cuotas">Cantidad de Cuotas</label>
+                    <input type="number" id="cuotas" placeholder="Ej. 6" min="1" required>
+                </div>
+
+                <button class="calc-btn" onclick="calcularAmortizacion()">Calcular Cuotas</button>
+            </div>
+
+            <div class="card" id="resultado-card" style="display: none;">
+                <div class="card-title">Tabla de Cuotas</div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Monto</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-cuotas-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calcularAmortizacion() {
+            const monto = parseFloat(document.getElementById('monto').value);
+            const interesPorcentaje = parseFloat(document.getElementById('interes').value);
+            const diasModalidad = parseInt(document.getElementById('modalidad').value);
+            const totalCuotas = parseInt(document.getElementById('cuotas').value);
+
+            // Validación simple
+            if (isNaN(monto) || isNaN(interesPorcentaje) || isNaN(totalCuotas) || monto <= 0 || totalCuotas <= 0) {
+                alert("Por favor, llena todos los campos con valores válidos.");
+                return;
+            }
+
+            // Cálculo matemático básico (Monto + Interés distribuido en las cuotas)
+            const montoInteres = monto * (interesPorcentaje / 100);
+            const totalPagar = monto + montoInteres;
+            const valorCuota = (totalPagar / totalCuotas).toFixed(2);
+
+            const tbody = document.getElementById('tabla-cuotas-body');
+            tbody.innerHTML = ""; // Limpiar cálculos anteriores
+
+            let fechaActual = new Date();
+
+            // Generar cada cuota de forma dinámica
+            for (let i = 1; i <= totalCuotas; i++) {
+                // Sumar los días correspondientes según la modalidad de cobro
+                fechaActual.setDate(fechaActual.getDate() + diasModalidad);
+                
+                // Formatear la fecha a un estilo limpio DD-MM-YYYY
+                const dia = String(fechaActual.getDate()).padStart(2, '0');
+                const mes = String(fechaActual.getMonth() + 1).padStart(2, '0');
+                const año = fechaActual.getFullYear();
+                const fechaFormateada = `${dia}-${mes}-${año}`;
+
+                // Crear la fila de la tabla
+                const fila = `
+                    <tr>
+                        <td>${fechaFormateada}</td>
+                        <td><strong>$${valorCuota}</strong></td>
+                        <td><span class="status-badge status-pendiente">Pendiente</span></td>
+                    </tr>
+                `;
+                tbody.innerHTML += fila;
+            }
+
+            // Mostrar la tarjeta que contiene la tabla de resultados
+            document.getElementById('resultado-card').style.display = 'block';
+        }
+    </script>
+
+</body>
+</html>

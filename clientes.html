@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRESTACOM 2.0 - Clientes</title>
+    <link rel="stylesheet" href="css/variable.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--color-background);
+            color: var(--color-text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--color-background);
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .search-container {
+            padding: 15px 20px;
+            background-color: var(--color-surface);
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 15px;
+            padding-left: 40px;
+            border: 1px solid #D1D5DB;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="gray" class="bi bi-search" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: 15px center;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background-color: #FFFFFF;
+        }
+
+        .client-list {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .client-card {
+            background-color: var(--color-surface);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid rgba(0,0,0,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .client-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text-main);
+            margin-bottom: 4px;
+        }
+
+        .client-meta {
+            font-size: 0.8rem;
+            color: #6B7280;
+            display: flex;
+            gap: 10px;
+        }
+
+        .client-badge {
+            background-color: rgba(255, 102, 0, 0.1);
+            color: var(--color-primary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .arrow-icon {
+            color: #9CA3AF;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #9CA3AF;
+            font-size: 0.95rem;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <a href="index.html" class="back-btn">⬅</a>
+            <h1>Mis Clientes</h1>
+        </header>
+
+        <div class="search-container">
+            <input type="text" id="buscador" class="search-input" placeholder="Buscar cliente por nombre o sector..." onkeyup="filtrarClientes()">
+        </div>
+
+        <main class="client-list" id="lista-clientes-container">
+            <p class="no-data" id="cargando-txt">Conectando a la base de datos...</p>
+        </main>
+    </div>
+
+    <script>
+        // Buscador en vivo para filtrar las tarjetas que bajen de internet
+        function filtrarClientes() {
+            const textoBuscado = document.getElementById('buscador').value.toLowerCase();
+            const tarjetas = document.getElementsByClassName('client-card');
+
+            for (let i = 0; i < tarjetas.length; i++) {
+                const nombreCliente = tarjetas[i].querySelector('h3').innerText.toLowerCase();
+                const sectorCliente = tarjetas[i].querySelector('.client-badge').innerText.toLowerCase();
+
+                if (nombreCliente.includes(textoBuscado) || sectorCliente.includes(textoBuscado)) {
+                    tarjetas[i].style.display = "flex";
+                } else {
+                    tarjetas[i].style.display = "none";
+                }
+            }
+        }
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5oHQtFWzLqY3JdpV_3pKY40rx00o6Gu4",
+            authDomain: "prestacom-36ebd.firebaseapp.com",
+            projectId: "prestacom-36ebd",
+            storageBucket: "prestacom-36ebd.firebasestorage.app",
+            messagingSenderId: "787618813060",
+            appId: "1:787618813060:web:8bbdc1bea7960cdbad5ed1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Controlamos que el usuario tenga sesión activa
+        const idEmpresaLogueada = localStorage.getItem('id_empresa');
+
+        if (!idEmpresaLogueada) {
+            window.location.href = "login.html";
+        }
+
+        const contenedor = document.getElementById('lista-clientes-container');
+
+        // 🔑 FILTRO MULTIUSUARIO: Trae solo los clientes creados bajo tu código de empresa
+        const q = query(
+            collection(db, "clientes_prestamo"), 
+            where("id_empresa", "==", idEmpresaLogueada)
+        );
+
+        // Oidor en tiempo real (onSnapshot)
+        onSnapshot(q, (snapshot) => {
+            contenedor.innerHTML = ""; // Limpia la pantalla antes de actualizar
+
+            if (snapshot.empty) {
+                contenedor.innerHTML = '<p class="no-data">No tienes clientes registrados aún en la nube.</p>';
+                return;
+            }
+
+            // Mapea y dibuja los deudores reales de la base de datos
+            snapshot.forEach((doc) => {
+                const cliente = doc.data();
+                
+                const tarjetaHTML = `
+                    <a href="perfil_cliente.html?id=${doc.id}" class="client-card">
+                        <div class="client-info">
+                            <h3>${cliente.nombre}</h3>
+                            <div class="client-meta">
+                                <span>📞 ${cliente.telefono || 'Sin número'}</span>
+                                <span class="client-badge">${cliente.ruta_sector || 'Sin Zona'}</span>
+                            </div>
+                        </div>
+                        <div class="arrow-icon">➔</div>
+                    </a>
+                `;
+                contenedor.innerHTML += tarjetaHTML;
+            });
+        }, (error) => {
+            console.error("Error al conectar con Firestore: ", error);
+            contenedor.innerHTML = '<p class="no-data">Error de conexión con la base de datos.</p>';
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRESTACOM 2.0 - Inicio</title>
+    <link rel="stylesheet" href="css/variable.css">
+    
+    <style>
+        /* Estilos generales para simular una App Móvil */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--color-background);
+            color: var(--color-text-main);
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px; /* Tamaño máximo estándar de celular */
+            min-height: 100vh;
+            background-color: var(--color-background);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Barra superior (Navbar) con el Mamei Vivo */
+        header {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Contenedor de la cuadrícula de botones */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 columnas iguales */
+            gap: 15px;
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        /* Tarjetas de menú (Botones) */
+        .menu-card {
+            background-color: var(--color-surface);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            text-decoration: none;
+            color: var(--color-text-main);
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        /* Efecto al presionar el botón */
+        .menu-card:active {
+            transform: scale(0.95);
+            background-color: #f9f9f9;
+        }
+
+        /* El ícono temporal (Círculos color mamei) */
+        .icon-placeholder {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(255, 102, 0, 0.1); /* Mamei con transparencia */
+            color: var(--color-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            font-size: 1.5rem;
+        }
+
+        /* Botón ancho para las estadísticas abajo */
+        .full-width {
+            grid-column: span 2;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>PRESTACOM 2.0</header>
+
+        <main class="menu-grid">
+            
+            <a href="cobros.html" class="menu-card">
+                <div class="icon-placeholder">📅</div>
+                Cobros del Día
+            </a>
+
+            <a href="cuotas-atrasadas.html" class="menu-card">
+                <div class="icon-placeholder">⏳</div>
+                Cuotas Atrasadas
+            </a>
+
+            <a href="nuevo-cliente.html" class="menu-card">
+                <div class="icon-placeholder">👤</div>
+                Nuevo Cliente
+            </a>
+
+            <a href="nuevo-prestamo.html" class="menu-card">
+                <div class="icon-placeholder">💵</div>
+                Nuevo Préstamo
+            </a>
+
+            <a href="prestamos.html" class="menu-card">
+                <div class="icon-placeholder">📋</div>
+                Préstamos
+            </a>
+
+            <a href="clientes.html" class="menu-card">
+                <div class="icon-placeholder">👥</div>
+                Clientes
+            </a>
+
+            <a href="estadisticas.html" class="menu-card full-width">
+                <div class="icon-placeholder">📈</div>
+                Estadísticas Generales
+            </a>
+
+        </main>
+    </div>
+
+</body>
+</html>

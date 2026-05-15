@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRESTACOM 2.0 - Nuevo Cliente</title>
+    <link rel="stylesheet" href="css/variable.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--color-background);
+            color: var(--color-text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--color-background);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        header {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        form {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 90px; 
+        }
+
+        .form-section {
+            background-color: var(--color-surface);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            color: var(--color-primary);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 102, 0, 0.1);
+            padding-bottom: 4px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 12px;
+        }
+
+        .input-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text-main);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: var(--color-text-main);
+            background-color: #FAFAFA;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background-color: #FFFFFF;
+        }
+
+        textarea {
+            resize: none;
+            height: 70px;
+        }
+
+        .footer-action {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 480px; 
+            background-color: var(--color-background);
+            padding: 15px 20px;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.08);
+            z-index: 100;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background-color: #FF6600; 
+            color: #FFFFFF;            
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(255, 102, 0, 0.2);
+            transition: background-color 0.2s;
+        }
+
+        .submit-btn:active {
+            background-color: #E05500; 
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <a href="index.html" class="back-btn">⬅</a>
+            <h1>Nuevo Cliente</h1>
+        </header>
+
+        <form id="form-nuevo-cliente">
+            
+            <div class="form-section">
+                <div class="section-title">Datos Personales</div>
+                <div class="input-group">
+                    <label for="cedula">Cédula o Identificación</label>
+                    <input type="text" id="cedula" placeholder="000-0000000-0" required>
+                </div>
+                <div class="input-group">
+                    <label for="nombre">Nombre Completo</label>
+                    <input type="text" id="nombre" placeholder="Ej. Juan Pérez" required>
+                </div>
+                <div class="input-group">
+                    <label for="apodo">Apodo (Opcional)</label>
+                    <input type="text" id="apodo" placeholder="Cómo le conocen">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="section-title">Contacto y Ruta</div>
+                <div class="input-group">
+                    <label for="telefono">Teléfono Principal (Celular)</label>
+                    <input type="tel" id="telefono" placeholder="Ej. 809-555-5555" required>
+                </div>
+                <div class="input-group">
+                    <label for="sector">Sector / Zona</label>
+                    <input type="text" id="sector" placeholder="Ej. Los Roblecitos" required>
+                </div>
+                <div class="input-group">
+                    <label for="direccion">Dirección Detallada</label>
+                    <textarea id="direccion" placeholder="Calle, número de casa, puntos de referencia..." required></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="section-title">Evaluación Financiera</div>
+                <div class="input-group">
+                    <label for="ingresos">Ingresos Mensuales Promedio ($)</label>
+                    <input type="number" id="ingresos" placeholder="Ej. 25000" min="0" required>
+                </div>
+                <div class="input-group">
+                    <label for="ocupacion">Ocupación / Lugar de Trabajo</label>
+                    <input type="text" id="ocupacion" placeholder="Ej. Propietario de Colmado" required>
+                </div>
+            </div>
+
+            <div class="footer-action">
+                <button type="submit" class="submit-btn" id="btn-guardar">Guardar Cliente</button>
+            </div>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // Credenciales oficiales de PRESTACOM
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5oHQtFWzLqY3JdpV_3pKY40rx00o6Gu4",
+            authDomain: "prestacom-36ebd.firebaseapp.com",
+            projectId: "prestacom-36ebd",
+            storageBucket: "prestacom-36ebd.firebasestorage.app",
+            messagingSenderId: "787618813060",
+            appId: "1:787618813060:web:8bbdc1bea7960cdbad5ed1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Control de sesión
+        const idEmpresaLogueada = localStorage.getItem('id_empresa');
+        const nombreUsuarioLogueado = localStorage.getItem('nombre_usuario');
+
+        if (!idEmpresaLogueada) {
+            window.location.href = "login.html";
+        }
+
+        // Capturamos el evento del formulario
+        document.getElementById('form-nuevo-cliente').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btnGuardar = document.getElementById('btn-guardar');
+            btnGuardar.disabled = true;
+            btnGuardar.innerText = "Guardando en la nube...";
+
+            // Armamos el objeto con tus inputs exactos
+            const nuevoCliente = {
+                id_empresa: idEmpresaLogueada, // 🔑 Sello multiusuario
+                cedula: document.getElementById('cedula').value.trim(),
+                nombre: document.getElementById('nombre').value.trim(),
+                apodo: document.getElementById('apodo').value.trim(),
+                telefono: document.getElementById('telefono').value.trim(),
+                ruta_sector: document.getElementById('sector').value.trim(),
+                direccion: document.getElementById('direccion').value.trim(),
+                ingresos: Number(document.getElementById('ingresos').value),
+                ocupacion: document.getElementById('ocupacion').value.trim(),
+                fecha_registro: new Date().toISOString(),
+                creado_por: nombreUsuarioLogueado
+            };
+
+            try {
+                // Se guarda en la colección "clientes_prestamo"
+                await addDoc(collection(db, "clientes_prestamo"), nuevoCliente);
+                
+                alert(`¡Cliente ${nuevoCliente.nombre} registrado con éxito en la nube!`);
+                window.location.href = "clientes.html"; // Redirecciona a la lista para verlo de una vez
+
+            } catch (error) {
+                console.error("Error al guardar: ", error);
+                alert("Hubo un problema de conexión. Inténtalo de nuevo.");
+                btnGuardar.disabled = false;
+                btnGuardar.innerText = "Guardar Cliente";
+            }
+        });
+    </script>
+
+</body>
+</html>

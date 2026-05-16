@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRESTACOM 2.0 - Cobros del Día</title>
-    <link rel="stylesheet" href="css/variable.css">
+    <link class="css-link" rel="stylesheet" href="css/variable.css">
     
     <style>
         * {
@@ -108,6 +108,11 @@
             opacity: 0.6;
         }
 
+        .cobro-info {
+            flex: 1;
+            padding-right: 10px;
+        }
+
         .cobro-info h3 {
             font-size: 1rem;
             font-weight: 600;
@@ -134,6 +139,7 @@
             flex-direction: column;
             gap: 6px;
             align-items: flex-end;
+            min-width: 100px;
         }
 
         .monto-cuota {
@@ -152,6 +158,25 @@
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(255, 102, 0, 0.15);
+            width: 100%;
+        }
+
+        .btn-reenganche {
+            background-color: #FFFFFF;
+            color: #4B5563;
+            border: 1px solid #D1D5DB;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .btn-reenganche:hover {
+            background-color: #F9FAFB;
+            border-color: #9CA3AF;
         }
 
         .badge-cobrado {
@@ -161,6 +186,8 @@
             padding: 4px 10px;
             border-radius: 6px;
             font-size: 0.8rem;
+            width: 100%;
+            text-align: center;
         }
 
         /* ESTILOS DEL MODAL FLOTANTE */
@@ -360,9 +387,8 @@
 
                 contenedor.innerHTML = "";
                 porCobrar = 0;
-                recaudado = 0; // Reiniciamos para calcular limpiamente desde la base de datos
+                recaudado = 0; 
                 
-                // Obtenemos la fecha de hoy en formato DD-MM-YYYY
                 const hoy = new Date();
                 const dia = String(hoy.getDate()).padStart(2, '0');
                 const mes = String(hoy.getMonth() + 1).padStart(2, '0');
@@ -375,7 +401,6 @@
                     const prestamo = documento.data();
                     const idPrestamo = documento.id;
                     
-                    // 1. Buscamos si hay cobros que se hicieron HOY para sumarlos al Recaudado del día
                     if (prestamo.cuotas_detalle) {
                         prestamo.cuotas_detalle.forEach(cuota => {
                             if (cuota.fecha_pago === fechaHoyStr) {
@@ -384,7 +409,6 @@
                         });
                     }
 
-                    // 2. Buscamos la cuota que está actualmente pendiente o abonada para mostrar en la lista
                     const cuotaPendiente = prestamo.cuotas_detalle.find(c => c.status === 'Pendiente' || c.status === 'Abonado');
 
                     if (cuotaPendiente) {
@@ -406,7 +430,6 @@
                             }
                         }
 
-                        // Validar número de cuota para evitar el 'undefined'
                         const nCuota = cuotaPendiente.numero || cuotaPendiente.numero_cuota || cuotaPendiente.id_cuota || "?";
 
                         const card = document.createElement('div');
@@ -421,18 +444,24 @@
                             <div class="cobro-action">
                                 <span class="monto-cuota">$${montoFaltante.toFixed(2)}</span>
                                 <button class="btn-cobrar" id="btn-${idPrestamo}">Cobrar</button>
+                                <button class="btn-reenganche" id="btn-re-<span>${idPrestamo}">🔄 Reenganche</button>
                                 <span class="badge-cobrado" id="badge-${idPrestamo}" style="display: none;">Cobrado</span>
                             </div>
                         `;
                         contenedor.appendChild(card);
 
+                        // Evento del botón Cobrar
                         document.getElementById(`btn-${idPrestamo}`).addEventListener('click', () => {
                             abrirModalCobro(idPrestamo, nombreCliente, nCuota, montoFaltante, prestamo);
+                        });
+
+                        // Evento dinámico del botón Reenganche
+                        document.getElementById(`btn-re-<span>${idPrestamo}`).addEventListener('click', () => {
+                            ejecutarReenganche(prestamo.id_cliente, nombreCliente, prestamo.cuotas_detalle);
                         });
                     }
                 }
 
-                // Pintamos los totales finales en las tarjetas superiores
                 document.getElementById('total-por-cobrar').innerText = `$${porCobrar.toFixed(2)}`;
                 document.getElementById('total-recaudado').innerText = `$${recaudado.toFixed(2)}`;
 
@@ -444,6 +473,23 @@
                 console.error("Error al cargar cobros: ", error);
                 contenedor.innerHTML = '<p style="text-align: center; padding: 20px; color: red;">Error al sincronizar con la nube.</p>';
             }
+        }
+
+        // Función que calcula el balance pendiente completo del préstamo para arrastrarlo
+        function ejecutarReenganche(idCliente, nombreCliente, cuotasDetalle) {
+            let balancePendienteTotal = 0;
+
+            if (cuotasDetalle && Array.isArray(cuotasDetalle)) {
+                cuotasDetalle.forEach(cuota => {
+                    if (cuota.status === 'Pendiente' || cuota.status === 'Abonado') {
+                        const pendienteCuota = cuota.monto_cuota - (cuota.monto_abonado || 0);
+                        balancePendienteTotal += pendienteCuota;
+                    }
+                });
+            }
+
+            // Redirección limpia enviando el ID del cliente, su nombre y el balance total a arrastrar
+            window.location.href = `nuevo-prestamo.html?reenganche=true&id_cliente=${idCliente}&nombre=${encodeURIComponent(nombreCliente)}&arrastre=${balancePendienteTotal.toFixed(2)}`;
         }
 
         function abrirModalCobro(idPrestamo, nombre, numCuota, montoFaltante, prestamoCompleto) {
@@ -475,7 +521,6 @@
             btnGuardarPago.innerText = "Guardando...";
 
             try {
-                // Obtenemos la fecha de hoy para el registro del pago
                 const hoy = new Date();
                 const dia = String(hoy.getDate()).padStart(2, '0');
                 const mes = String(hoy.getMonth() + 1).padStart(2, '0');
@@ -498,19 +543,17 @@
                         }
                         
                         cuota.monto_abonado = nuevoMontoAbonado;
-                        cuota.fecha_pago = fechaHoyStr; // 📅 Guardamos el día del cobro
-                        cuota.monto_ultimo_pago_dia = montoPago; // 💰 Guardamos cuánto pagó hoy
+                        cuota.fecha_pago = fechaHoyStr; 
+                        cuota.monto_ultimo_pago_dia = montoPago; 
                     }
                     return cuota;
                 });
 
-                // Guardamos en Firebase (Usando prestamoRef corregido)
                 await updateDoc(prestamoRef, { cuotas_detalle: cuotasActualizadas });
 
                 alert("¡Cobro guardado con éxito en la nube!");
                 cerrarModalCobro();
                 
-                // Recarga la lista completa recalculando los totales reales desde Firebase
                 await cargarCobrosDelDia(); 
 
             } catch (error) {

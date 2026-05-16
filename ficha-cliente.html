@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRESTACOM 2.0 - Ficha del Cliente</title>
-    <link rel="stylesheet" href="css/variable.css">
     
     <style>
         * {
@@ -15,8 +14,8 @@
         }
 
         body {
-            background-color: var(--color-background);
-            color: var(--color-text-main);
+            background-color: #F9FAFB;
+            color: #1F2937;
             display: flex;
             justify-content: center;
             min-height: 100vh;
@@ -25,13 +24,13 @@
         .app-container {
             width: 100%;
             max-width: 480px;
-            background-color: var(--color-background);
+            background-color: #F9FAFB;
             display: flex;
             flex-direction: column;
         }
 
         header {
-            background-color: var(--color-primary);
+            background-color: #111827;
             color: white;
             padding: 15px 20px;
             display: flex;
@@ -86,7 +85,6 @@
             object-fit: cover;
         }
 
-        /* Botón flotante para la cámara */
         .btn-cambiar-foto {
             position: absolute;
             bottom: -10px;
@@ -114,17 +112,37 @@
             margin-top: 20px;
             font-size: 1.4rem;
             font-weight: bold;
-            color: var(--color-text-main);
+            color: #1F2937;
             text-align: center;
         }
 
-        /* INFORMACIÓN DETALLADA */
+        .status-pill {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            background-color: #D1FAE5;
+            color: #065F46;
+            margin-top: 5px;
+        }
+
+        /* TARJETAS DE INFORMACIÓN */
         .info-card {
-            background-color: var(--color-surface);
+            background-color: white;
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
             border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .info-card h3 {
+            font-size: 1rem;
+            color: #111827;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #FF6600;
+            padding-bottom: 5px;
+            display: inline-block;
         }
 
         .info-row {
@@ -149,27 +167,48 @@
 
         .info-value {
             font-size: 1rem;
-            color: var(--color-text-main);
+            color: #1F2937;
             font-weight: 600;
             margin-top: 2px;
         }
 
-        .status-pill {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            background-color: #D1FAE5;
-            color: #065F46;
+        /* RESUMEN FINANCIERO DEL PRÉSTAMO */
+        .loan-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
             margin-top: 5px;
         }
 
+        .summary-item {
+            background-color: #F9FAFB;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #E5E7EB;
+        }
+
+        .summary-item span {
+            display: block;
+            font-size: 0.75rem;
+            color: #6B7280;
+        }
+
+        .summary-item strong {
+            font-size: 1rem;
+            color: #1F2937;
+        }
+
+        .mamei-text {
+            color: #FF6600 !important;
+        }
+
+        /* ACCIONES */
         .acciones-ficha {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
             margin-top: 10px;
+            margin-bottom: 30px;
         }
 
         .btn-accion {
@@ -190,7 +229,6 @@
         .btn-whatsapp { background-color: #25D366; color: white; }
         .btn-editar { background-color: #E5E7EB; color: #374151; grid-column: span 2; }
 
-        /* Estado cargando sobre la foto */
         .loading-overlay {
             position: absolute;
             top: 4px;
@@ -207,7 +245,6 @@
             font-weight: bold;
             display: none;
         }
-
     </style>
 </head>
 <body>
@@ -227,15 +264,15 @@
                     </div>
                     <label for="input-foto" class="btn-cambiar-foto" title="Tomar Foto">📷</label>
                     <input type="file" id="input-foto" accept="image/*" capture="environment" style="display: none;">
-                    
                     <div class="loading-overlay" id="loading-foto">Subiendo...</div>
                 </div>
                 
                 <h2 class="cliente-nombre-main" id="nombre-main">Cargando...</h2>
-                <div class="status-pill" id="status-cliente">Cliente Activo</div>
+                <div class="status-pill" id="status-cliente">Cargando Estado...</div>
             </section>
 
             <div class="info-card">
+                <h3>Datos Personales</h3>
                 <div class="info-row">
                     <span class="info-label">Cédula / Documento</span>
                     <span class="info-value" id="cedula-val">---</span>
@@ -252,9 +289,12 @@
                     <span class="info-label">Ruta / Sector</span>
                     <span class="info-value" id="sector-val">---</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Ocupación / Trabajo</span>
-                    <span class="info-value" id="trabajo-val">---</span>
+            </div>
+
+            <div class="info-card" id="card-financiera">
+                <h3>Resumen Financiero</h3>
+                <div id="contenido-financiero">
+                    <p style="color: #6B7280; font-size: 0.9rem;">Buscando préstamos activos...</p>
                 </div>
             </div>
 
@@ -269,7 +309,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC5oHQtFWzLqY3JdpV_3pKY40rx00o6Gu4",
@@ -288,13 +328,13 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (!idCliente) {
-                alert("No se encontró el cliente en los parámetros.");
+                alert("No se encontró el ID del cliente.");
                 return;
             }
 
             await cargarDatosCliente();
+            await cargarResumenPrestamo();
 
-            // Escuchar cuando el cobrador seleccione o tome una foto
             document.getElementById('input-foto').addEventListener('change', manejarCambioFoto);
         });
 
@@ -311,13 +351,9 @@
                     document.getElementById('tel-val').innerText = data.telefono || "---";
                     document.getElementById('dir-val').innerText = data.direccion || "No registrada";
                     document.getElementById('sector-val').innerText = data.ruta_sector || "General";
-                    document.getElementById('trabajo-val').innerText = data.ocupacion || "---";
                     
-                    // Si el cliente ya tiene foto en la base de datos, la muestra
                     if (data.foto_url) {
                         document.getElementById('img-cliente').src = data.foto_url;
-                    } else {
-                        document.getElementById('img-cliente').src = "https://via.placeholder.com/140x160?text=SIN+FOTO";
                     }
 
                     if (data.telefono) {
@@ -326,7 +362,86 @@
                     }
                 }
             } catch (error) {
-                console.error("Error cargando ficha:", error);
+                console.error("Error cargando datos del cliente:", error);
+            }
+        }
+
+        async function cargarResumenPrestamo() {
+            const contenedorFinanciero = document.getElementById('contenido-financiero');
+            const statusPill = document.getElementById('status-cliente');
+
+            try {
+                // Consultamos en la colección independiente 'prestamos' buscando el id_cliente
+                const q = query(
+                    collection(db, "prestamos"),
+                    where("id_cliente", "==", idCliente),
+                    where("status", "==", "Activo") // Solo el préstamo vivo
+                );
+
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    contenedorFinanciero.innerHTML = `<p style="color: #6B7280; font-size: 0.9rem;">Este cliente no tiene ningún préstamo activo actualmente.</p>`;
+                    statusPill.innerText = "Sin Préstamos";
+                    statusPill.style.backgroundColor = "#E5E7EB";
+                    statusPill.style.color = "#4B5563";
+                    return;
+                }
+
+                let prestamoDoc = querySnapshot.docs[0].data();
+                
+                // 🔑 REAJUSTE SEGURO DE DINERO: Busca tanto monto_prestado como monto
+                const numMonto = Number(prestamoDoc.monto_prestado) || Number(prestamoDoc.monto) || 0;
+                const numBalance = Number(prestamoDoc.balance_pendiente) || 0;
+                
+                // 🔑 REAJUSTE SEGURO DE MODALIDAD: Captura el campo con espacios de Firestore
+                const modalidadReal = prestamoDoc['modalidad de pago'] || prestamoDoc.modalidad || 'Diario';
+                
+                // Desglose matemático de las cuotas
+                let cuotasTotales = 0;
+                let cuotasPagadas = 0;
+                let cuotasPendientes = 0;
+
+                if (prestamoDoc.cuotas_detalle && Array.isArray(prestamoDoc.cuotas_detalle)) {
+                    cuotasTotales = prestamoDoc.cuotas_detalle.length;
+                    cuotasPagadas = prestamoDoc.cuotas_detalle.filter(c => c.status === 'Pagada').length;
+                    cuotasPendientes = prestamoDoc.cuotas_detalle.filter(c => c.status === 'Pendiente').length;
+                }
+
+                // Cambiar el Pill superior a verde
+                statusPill.innerText = "Cliente Activo";
+                statusPill.style.backgroundColor = "#D1FAE5";
+                statusPill.style.color = "#065F46";
+
+                // Inyectamos el resumen financiero exacto
+                contenedorFinanciero.innerHTML = `
+                    <div class="info-row">
+                        <span class="info-label">Modalidad de Cobro</span>
+                        <span class="info-value" style="color: #FF6600;">${modalidadReal}</span>
+                    </div>
+                    <div class="loan-summary-grid">
+                        <div class="summary-item">
+                            <span>Monto Prestado</span>
+                            <strong>$${numMonto.toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
+                        </div>
+                        <div class="summary-item">
+                            <span>Balance Pendiente</span>
+                            <strong class="mamei-text">$${numBalance.toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
+                        </div>
+                        <div class="summary-item">
+                            <span>Cuotas Pagadas</span>
+                            <strong style="color: #27AE60;">${cuotasPagadas} de ${cuotasTotales}</strong>
+                        </div>
+                        <div class="summary-item">
+                            <span>Cuotas Restantes</span>
+                            <strong>${cuotasPendientes}</strong>
+                        </div>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error("Error mapeando la cartera del cliente:", error);
+                contenedorFinanciero.innerHTML = `<p style="color: #C0392B; font-size: 0.9rem;">Error al sincronizar cuentas bancarias.</p>`;
             }
         }
 
@@ -335,14 +450,12 @@
             if (!archivo) return;
 
             const overlayCarga = document.getElementById('loading-foto');
-            overlayCarga.style.display = "flex"; // Mostrar "Subiendo..."
+            overlayCarga.style.display = "flex";
 
             try {
-                // 1. Convertir la imagen a FormData para subirla a un servidor de imágenes gratuito y rápido
                 const formData = new FormData();
                 formData.append("image", archivo);
 
-                // Usamos una clave pública de ImgBB para almacenar las fotos de forma externa y rápida
                 const respuesta = await fetch("https://api.imgbb.com/1/upload?key=6be0e3500d43a60cbdfbf6c166d3a843", {
                     method: "POST",
                     body: formData
@@ -353,24 +466,21 @@
                 if (resultadoJson.success) {
                     const urlFotoGenerada = resultadoJson.data.url;
 
-                    // 2. Guardar esa URL de texto en el documento del cliente en Firestore
                     const clienteRef = doc(db, "clientes_prestamo", idCliente);
                     await updateDoc(clienteRef, {
                         foto_url: urlFotoGenerada
                     });
 
-                    // 3. Actualizar la vista de la foto inmediatamente sin recargar la página
                     document.getElementById('img-cliente').src = urlFotoGenerada;
-                    alert("¡Foto del cliente actualizada con éxito!");
+                    alert("¡Foto guardada en la nube y asignada al cliente!");
                 } else {
-                    alert("No se pudo procesar la imagen. Intenta de nuevo.");
+                    alert("No se pudo procesar la imagen temporalmente.");
                 }
-
             } catch (error) {
                 console.error("Error al subir la foto:", error);
-                alert("Hubo un error de conexión al subir la foto.");
+                alert("Error de conexión al subir la foto.");
             } finally {
-                overlayCarga.style.display = "none"; // Ocultar capa de carga
+                overlayCarga.style.display = "none";
             }
         }
     </script>

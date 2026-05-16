@@ -444,7 +444,7 @@
                             <div class="cobro-action">
                                 <span class="monto-cuota">$${montoFaltante.toFixed(2)}</span>
                                 <button class="btn-cobrar" id="btn-${idPrestamo}">Cobrar</button>
-                                <button class="btn-reenganche" id="btn-re-<span>${idPrestamo}">🔄 Reenganche</button>
+                                <button class="btn-reenganche" id="btn-re-${idPrestamo}">🔄 Reenganche</button>
                                 <span class="badge-cobrado" id="badge-${idPrestamo}" style="display: none;">Cobrado</span>
                             </div>
                         `;
@@ -455,8 +455,8 @@
                             abrirModalCobro(idPrestamo, nombreCliente, nCuota, montoFaltante, prestamo);
                         });
 
-                        // Evento dinámico del botón Reenganche
-                        document.getElementById(`btn-re-<span>${idPrestamo}`).addEventListener('click', () => {
+                        // Evento dinámico del botón Reenganche (ID Corregido sin span)
+                        document.getElementById(`btn-re-${idPrestamo}`).addEventListener('click', () => {
                             ejecutarReenganche(prestamo.id_cliente, nombreCliente, prestamo.cuotas_detalle);
                         });
                     }
@@ -475,7 +475,7 @@
             }
         }
 
-        // Función que calcula el balance pendiente completo del préstamo para arrastrarlo
+        // Función corregida: Envía los nombres exactos que nuevo-prestamo.html está esperando
         function ejecutarReenganche(idCliente, nombreCliente, cuotasDetalle) {
             let balancePendienteTotal = 0;
 
@@ -488,8 +488,8 @@
                 });
             }
 
-            // Redirección limpia enviando el ID del cliente, su nombre y el balance total a arrastrar
-            window.location.href = `nuevo-prestamo.html?reenganche=true&id_cliente=${idCliente}&nombre=${encodeURIComponent(nombreCliente)}&arrastre=${balancePendienteTotal.toFixed(2)}`;
+            // Redirección limpia enviando los parámetros exactos unificados
+            window.location.href = `nuevo-prestamo.html?reenganche=true&cliente_id=${idCliente}&nombre_cliente=${encodeURIComponent(nombreCliente)}&arrastre=${balancePendienteTotal.toFixed(2)}`;
         }
 
         function abrirModalCobro(idPrestamo, nombre, numCuota, montoFaltante, prestamoCompleto) {

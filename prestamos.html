@@ -263,10 +263,20 @@
                         claseBadge = 'status-finalizado';
                     } else {
                         if (prestamo.cuotas_detalle && Array.isArray(prestamo.cuotas_detalle)) {
+                            // 🔑 DÍAS DE GRACIA: Leemos el campo desde la base de datos (por defecto 0 si no existe)
+                            const diasGracia = Number(prestamo.dias_gracia) || 0;
+
                             const tieneMora = prestamo.cuotas_detalle.some(cuota => {
                                 if (cuota.status !== 'Pendiente') return false;
+                                
                                 const vencimiento = parsearFechaString(cuota.fecha_vencimiento);
-                                return vencimiento < hoy;
+                                
+                                // Clonamos la fecha de vencimiento y le sumamos los días de gracia permitidos
+                                const fechaLimiteCobro = new Date(vencimiento);
+                                fechaLimiteCobro.setDate(fechaLimiteCobro.getDate() + diasGracia);
+                                
+                                // Cae en atraso solo si la fecha límite ya es menor que el día de hoy
+                                return fechaLimiteCobro < hoy;
                             });
 
                             if (tieneMora) {

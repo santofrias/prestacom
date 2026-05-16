@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRESTACOM 2.0 - Préstamos</title>
-    <link rel="stylesheet" href="css/variable.css">
+    <link class="css-link" rel="stylesheet" href="css/variable.css">
     
     <style>
         * {
@@ -119,7 +119,7 @@
             font-size: 0.78rem;
             color: #6B7280;
             margin-top: 4px;
-            line-height: 1.3;
+            line-height: 1.4;
         }
 
         /* Badges de estados */
@@ -290,6 +290,9 @@
                     const numMontoSolicitado = Number(prestamo.monto_solicitado) || 0;
                     const numBalancePendiente = Number(prestamo.balance_pendiente) || 0;
 
+                    // 🔑 LEER CAMPO CON ESPACIOS DE FIRESTORE:
+                    const modalidadReal = prestamo['modalidad de pago'] || prestamo.modalidad || 'Diario';
+
                     const tarjeta = document.createElement('div');
                     tarjeta.className = "loan-card";
                     tarjeta.setAttribute('data-status', estadoCalculado);
@@ -300,7 +303,7 @@
                                 <h3>${prestamo.nombre_cliente || 'Cliente'}</h3>
                                 <div class="loan-date">
                                     📅 Del: <strong>${fechaInicio}</strong> al <strong>${fechaFin}</strong><br>
-                                    🔄 Modalidad: ${prestamo.modalidad || 'Diario'}
+                                    🔄 Modalidad: ${modalidadReal}
                                 </div>
                             </div>
                             <span class="status-badge ${claseBadge}">${textoBadge}</span>

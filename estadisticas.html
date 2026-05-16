@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -159,7 +160,7 @@
         .progress-bar {
             background-color: #27AE60;
             height: 100%;
-            width: 0%; /* Inicia en cero para animarse dinámicamente con JS */
+            width: 0%;
             transition: width 0.5s ease-in-out;
         }
 
@@ -288,7 +289,9 @@
         });
 
         function parsearFechaString(fechaStr) {
+            if (!fechaStr) return new Date();
             const partes = fechaStr.split('-');
+            // Retorna un objeto Date limpio en formato (año, mes - 1, día)
             return new Date(partes[2], partes[1] - 1, partes[0]);
         }
 
@@ -311,12 +314,15 @@
                 const hoy = new Date();
                 hoy.setHours(0,0,0,0);
 
-                const mesActual = hoy.getMonth(); // 0 = Enero, 4 = Mayo, etc.
+                const mesActual = hoy.getMonth() + 1; // 1 = Enero, 5 = Mayo, etc.
                 const anoActual = hoy.getFullYear();
 
                 querySnapshot.forEach((doc) => {
                     const prestamo = doc.data();
-                    carteraTotalHistorica += parseFloat(prestamo.monto_solicitado || 0);
+                    
+                    // Cartera histórica se calcula en base al monto total pactado a cobrar (Capital + Interés)
+                    const montoTotalPrestamo = parseFloat(prestamo.monto_total || prestamo.monto_solicitado || 0);
+                    carteraTotalHistorica += montoTotalPrestamo;
 
                     if (prestamo.status === 'Finalizado') {
                         prestamosFinalizadosContador++;
@@ -324,40 +330,57 @@
 
                     if (prestamo.status === 'Activo') {
                         prestamosActivosContador++;
-                        capitalEnCalle += parseFloat(prestamo.balance_pendiente || 0);
                         interesesTotales += parseFloat(prestamo.monto_interes || 0);
 
-                        // Auditar cuota por cuota dentro del arreglo del préstamo activo
-                        prestamo.cuotas_detalle.forEach((cuota) => {
-                            totalCuotasEvaluadas++;
+                        if (prestamo.cuotas_detalle) {
+                            prestamo.cuotas_detalle.forEach((cuota) => {
+                                totalCuotasEvaluadas++;
 
-                            // 1. Validar Mora: Cuota pendiente cuya fecha ya expiró
-                            if (cuota.status === 'Pendiente') {
-                                const vencimiento = parsearFechaString(cuota.fecha_vencimiento);
-                                if (vencimiento < hoy) {
-                                    capitalEnMora += cuota.monto_cuota;
-                                } else {
-                                    cuotasSanasOAlDia++; // Sigue a tiempo
+                                // Dinero que falta por cobrar en esta cuota en específico
+                                const abonoCuota = cuota.monto_abonado || 0;
+                                const saldoFaltanteCuota = cuota.monto_cuota - abonoCuota;
+
+                                // 1. BALANCE EN LA CALLE REAL: Sumamos el dinero que verdaderamente falta cobrar de las cuotas pendientes/abonadas
+                                if (cuota.status !== 'Pagado') {
+                                    capitalEnCalle += saldoFaltanteCuota;
                                 }
-                            }
 
-                            // Si ya está pagada de forma correcta, cuenta como parte de la salud financiera del negocio
-                            if (cuota.status === 'Pagado') {
-                                cuotasSanasOAlDia++;
-                            }
-
-                            // 2. Validar Recaudación del Mes Actual (Abonos o pagos totales caídos en este mes calendario)
-                            if (cuota.fecha_pago_real) {
-                                const fechaPagoRealObj = new Date(cuota.fecha_pago_real);
-                                if (fechaPagoRealObj.getMonth() === mesActual && fechaPagoRealObj.getFullYear() === anoActual) {
-                                    cobradoMesActual += parseFloat(cuota.monto_pagado || cuota.monto_cuota);
+                                // 2. VALIDACIÓN DE MORA: Cuota que venció y no está totalmente pagada
+                                if (cuota.status === 'Pendiente' || cuota.status === 'Abonado') {
+                                    const vencimiento = parsearFechaString(cuota.fecha_vencimiento);
+                                    if (vencimiento < hoy) {
+                                        capitalEnMora += saldoFaltanteCuota; // Cae en mora el balance que debe, no la cuota entera
+                                    } else {
+                                        cuotasSanasOAlDia++; // Está en fecha y va bien
+                                    }
                                 }
-                            }
-                        });
+
+                                if (cuota.status === 'Pagado') {
+                                    cuotasSanasOAlDia++;
+                                }
+
+                                // 3. RECAUDACIÓN DEL MES ACTUAL: Buscamos el string "fecha_pago" (DD-MM-YYYY)
+                                if (cuota.fecha_pago) {
+                                    const partesPago = cuota.fecha_pago.split('-');
+                                    const mesPago = parseInt(partesPago[1], 10);
+                                    const anoPago = parseInt(partesPago[2], 10);
+
+                                    if (mesPago === mesActual && anoPago === anoActual) {
+                                        // Si la cuota se pagó completa en este mes, sumamos su valor neto cobrado
+                                        // Damos prioridad a monto_ultimo_pago_dia si existe, o al monto_cuota completo
+                                        if (cuota.status === 'Pagado' && !cuota.monto_ultimo_pago_dia) {
+                                            cobradoMesActual += (cuota.monto_cuota - abonoCuota);
+                                        } else {
+                                            cobradoMesActual += parseFloat(cuota.monto_ultimo_pago_dia || cuota.monto_abonado || 0);
+                                        }
+                                    }
+                                }
+                            });
+                        }
                     }
                 });
 
-                // Formatear salidas numéricas en pantalla con estándar internacional
+                // Formatear e imprimir salidas numéricas en pantalla con estándar local
                 document.getElementById('stat-capital-calle').innerText = `$${capitalEnCalle.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 document.getElementById('stat-intereses').innerText = `+$${interesesTotales.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 document.getElementById('stat-cobrado-mes').innerText = `$${cobradoMesActual.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
@@ -378,13 +401,13 @@
 
                 // Ajustar color visual de la barra según el resultado matemático
                 if (porcentajeSalud < 70) {
-                    document.getElementById('salud-barra').style.backgroundColor = "#C0392B"; // Alerta roja si cae mucho
+                    document.getElementById('salud-barra').style.backgroundColor = "#C0392B"; 
                     document.getElementById('salud-porcentaje').style.color = "#C0392B";
                 } else if (porcentajeSalud < 85) {
-                    document.getElementById('salud-barra').style.backgroundColor = "#D4AC0D"; // Amarillo preventivo
+                    document.getElementById('salud-barra').style.backgroundColor = "#D4AC0D"; 
                     document.getElementById('salud-porcentaje').style.color = "#D4AC0D";
                 } else {
-                    document.getElementById('salud-barra').style.backgroundColor = "#27AE60"; // Verde óptimo
+                    document.getElementById('salud-barra').style.backgroundColor = "#27AE60"; 
                     document.getElementById('salud-porcentaje').style.color = "#27AE60";
                 }
 

@@ -116,9 +116,10 @@
         }
 
         .loan-date {
-            font-size: 0.75rem;
+            font-size: 0.78rem;
             color: #6B7280;
-            margin-top: 2px;
+            margin-top: 4px;
+            line-height: 1.3;
         }
 
         /* Badges de estados */
@@ -194,7 +195,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC5oHQtFWzLqY3JdpV_3pKY40rx00o6Gu4",
@@ -221,6 +222,7 @@
         });
 
         function parsearFechaString(fechaStr) {
+            if (!fechaStr) return new Date();
             const partes = fechaStr.split('-');
             return new Date(partes[2], partes[1] - 1, partes[0]);
         }
@@ -229,7 +231,6 @@
             const contenedor = document.getElementById('contenedor-prestamos');
             
             try {
-                // Traemos todos los préstamos de la empresa ordenados por fecha de creación (los más nuevos primero)
                 const q = query(
                     collection(db, "prestamos"), 
                     where("id_empresa", "==", idEmpresaLogueada)
@@ -246,11 +247,9 @@
                 const hoy = new Date();
                 hoy.setHours(0,0,0,0);
 
-                // Convertimos el snapshot a array para poder ordenarlo de forma manual por si no tienes índice compuesto configurado
                 let listaDocs = [];
                 querySnapshot.forEach(doc => listaDocs.push(doc.data()));
                 
-                // Ordenar por fecha de registro descendiente de forma segura
                 listaDocs.sort((a, b) => new Date(b.fecha_registro) - new Date(a.fecha_registro));
 
                 listaDocs.forEach((prestamo) => {
@@ -259,27 +258,37 @@
                     let claseBadge = 'status-al-dia';
 
                     if (prestamo.status === 'Finalizado') {
-                        estadoCalculado = 'finalizado'; // Para control interno aunque no tenga botón arriba
+                        estadoCalculado = 'finalizado';
                         textoBadge = 'Liquidado';
                         claseBadge = 'status-finalizado';
                     } else {
-                        // Si está activo, revisamos si tiene alguna cuota atrasada con respecto a hoy
-                        const tieneMora = prestamo.cuotas_detalle.some(cuota => {
-                            if (cuota.status !== 'Pendiente') return false;
-                            const vencimiento = parsearFechaString(cuota.fecha_vencimiento);
-                            return vencimiento < hoy;
-                        });
+                        if (prestamo.cuotas_detalle && Array.isArray(prestamo.cuotas_detalle)) {
+                            const tieneMora = prestamo.cuotas_detalle.some(cuota => {
+                                if (cuota.status !== 'Pendiente') return false;
+                                const vencimiento = parsearFechaString(cuota.fecha_vencimiento);
+                                return vencimiento < hoy;
+                            });
 
-                        if (tieneMora) {
-                            estadoCalculado = 'atrasado';
-                            textoBadge = 'Atrasado';
-                            claseBadge = 'status-atrasado';
+                            if (tieneMora) {
+                                estadoCalculado = 'atrasado';
+                                textoBadge = 'Atrasado';
+                                claseBadge = 'status-atrasado';
+                            }
                         }
                     }
 
-                    // Obtener la fecha de la última cuota para poner el fin del préstamo
-                    const ultimaCuota = prestamo.cuotas_detalle[prestamo.cuotas_detalle.length - 1];
-                    const fechaFin = ultimaCuota ? ultimaCuota.fecha_vencimiento : 'N/A';
+                    // 📅 Manejo inteligente de las fechas de Inicio y Fin
+                    const fechaInicio = prestamo.fecha_inicio || (prestamo.fecha_registro ? prestamo.fecha_registro.split('T')[0] : 'N/A');
+                    
+                    let fechaFin = 'N/A';
+                    if (prestamo.cuotas_detalle && prestamo.cuotas_detalle.length > 0) {
+                        const ultimaCuota = prestamo.cuotas_detalle[prestamo.cuotas_detalle.length - 1];
+                        fechaFin = ultimaCuota ? ultimaCuota.fecha_vencimiento : 'N/A';
+                    }
+
+                    // 🛡️ CONTROL ANTIBUGS: Evitamos $NaN forzando conversión segura a número
+                    const numMontoSolicitado = Number(prestamo.monto_solicitado) || 0;
+                    const numBalancePendiente = Number(prestamo.balance_pendiente) || 0;
 
                     const tarjeta = document.createElement('div');
                     tarjeta.className = "loan-card";
@@ -288,19 +297,22 @@
                     tarjeta.innerHTML = `
                         <div class="loan-header">
                             <div>
-                                <h3>${prestamo.nombre_cliente}</h3>
-                                <div class="loan-date">Fin: ${fechaFin} • ${prestamo.modalidad || 'Diario'}</div>
+                                <h3>${prestamo.nombre_cliente || 'Cliente'}</h3>
+                                <div class="loan-date">
+                                    📅 Del: <strong>${fechaInicio}</strong> al <strong>${fechaFin}</strong><br>
+                                    🔄 Modalidad: ${prestamo.modalidad || 'Diario'}
+                                </div>
                             </div>
                             <span class="status-badge ${claseBadge}">${textoBadge}</span>
                         </div>
                         <div class="loan-details">
                             <div class="detail-item">
                                 <span>Monto Prestado</span>
-                                <strong>$${parseFloat(prestamo.monto_solicitado).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
+                                <strong>$${numMontoSolicitado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
                             </div>
                             <div class="detail-item">
                                 <span>Balance Pendiente</span>
-                                <strong class="mamei-text">$${parseFloat(prestamo.balance_pendiente).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
+                                <strong class="mamei-text">$${numBalancePendiente.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
                             </div>
                         </div>
                     `;
@@ -308,7 +320,6 @@
                     contenedor.appendChild(tarjeta);
                 });
 
-                // Re-aplicar el filtro actual por si se refresca la información
                 ejecutarFiltroPantalla(filtroActual);
 
             } catch (error) {
@@ -348,7 +359,6 @@
                 const estadoTarjeta = tarjetas[i].getAttribute('data-status');
 
                 if (estado === 'todos') {
-                    // Si el filtro es todos, mostramos los que están al día o atrasados (los Liquidados/Finalizados quedan ocultos para no saturar, o puedes quitarlos si quieres verlos)
                     if (estadoTarjeta === 'al-dia' || estadoTarjeta === 'atrasado') {
                         tarjetas[i].style.display = "flex";
                     } else {

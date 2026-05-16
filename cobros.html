@@ -155,14 +155,15 @@
         }
 
         .badge-cobrado {
+            background-color: #10B981;
+            color: white;
             font-weight: bold;
             padding: 4px 10px;
             border-radius: 6px;
             font-size: 0.8rem;
-            display: none;
         }
 
-        /* ESTILOS DEL MODAL FLOTANTE (PANTALLA DE ABONO) */
+        /* ESTILOS DEL MODAL FLOTANTE */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -329,7 +330,6 @@
         let cuotaSugeridaSeleccionada = 0;
         let datosCompletosPrestamo = null;
 
-        // Elementos del Modal
         const modalCobro = document.getElementById('modal-cobro');
         const modalClienteNombre = document.getElementById('modal-cliente-nombre');
         const modalCuotaSugerida = document.getElementById('modal-cuota-sugerida');
@@ -339,8 +339,6 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             await cargarCobrosDelDia();
-            
-            // Eventos para cerrar el modal
             btnCerrarModal.addEventListener('click', cerrarModalCobro);
             btnGuardarPago.addEventListener('click', procesarPagoYTicket);
         });
@@ -361,24 +359,33 @@
 
                 contenedor.innerHTML = "";
                 porCobrar = 0;
-                const sectoresCache = {};
+                recaudado = 0;
+                const clientesCache = {};
 
                 for (const documento of querySnapshot.docs) {
                     const prestamo = documento.data();
                     const idPrestamo = documento.id;
-                    const cuotaPendiente = prestamo.cuotas_detalle.find(c => c.status === 'Pendiente');
+                    
+                    // Buscamos la cuota pendiente
+                    const cuotaPendiente = prestamo.cuotas_detalle.find(c => c.status === 'Pendiente' || c.status === 'Abonado');
 
                     if (cuotaPendiente) {
-                        porCobrar += cuotaPendiente.monto_cuota;
+                        // Si la cuota tiene abonos previos, calculamos lo que realmente le falta por pagar
+                        const montoFaltante = cuotaPendiente.monto_cuota - (cuotaPendiente.monto_abonado || 0);
+                        porCobrar += montoFaltante;
 
-                        let sector = "Sin sector";
-                        if (sectoresCache[prestamo.id_cliente]) {
-                            sector = sectoresCache[prestamo.id_cliente];
+                        let nombreCliente = "Cliente Desconocido";
+                        let sector = "General";
+
+                        if (clientesCache[prestamo.id_cliente]) {
+                            nombreCliente = clientesCache[prestamo.id_cliente].nombre;
+                            sector = clientesCache[prestamo.id_cliente].sector;
                         } else {
                             const clientDoc = await getDoc(doc(db, "clientes_prestamo", prestamo.id_cliente));
                             if (clientDoc.exists()) {
+                                nombreCliente = clientDoc.data().nombre;
                                 sector = clientDoc.data().ruta_sector || "General";
-                                sectoresCache[prestamo.id_cliente] = sector;
+                                clientesCache[prestamo.id_cliente] = { nombre: nombreCliente, sector: sector };
                             }
                         }
 
@@ -386,4 +393,111 @@
                         card.className = "cobro-card";
                         card.id = `card-${idPrestamo}`;
                         card.innerHTML = `
-                            <div class="
+                            <div class="cobro-info">
+                                <h3>${nombreCliente} <span class="sector-badge">${sector}</span></h3>
+                                <p class="cobro-meta">Cuota #${cuotaPendiente.numero} - Vence: ${cuotaPendiente.fecha_vencimiento}</p>
+                                ${cuotaPendiente.monto_abonado > 0 ? `<p class="cobro-meta" style="color: #FF6600; font-weight:bold;">Abonado previamente: $${cuotaPendiente.monto_abonado.toFixed(2)}</p>` : ''}
+                            </div>
+                            <div class="cobro-action">
+                                <span class="monto-cuota">$${montoFaltante.toFixed(2)}</span>
+                                <button class="btn-cobrar" id="btn-${idPrestamo}">Cobrar</button>
+                                <span class="badge-cobrado" id="badge-${idPrestamo}">Cobrado</span>
+                            </div>
+                        `;
+                        contenedor.appendChild(card);
+
+                        // Evento click para abrir el modal flotante
+                        document.getElementById(`btn-${idPrestamo}`).addEventListener('click', () => {
+                            abrirModalCobro(idPrestamo, nombreCliente, cuotaPendiente.numero, montoFaltante, prestamo);
+                        });
+                    }
+                }
+
+                document.getElementById('total-por-cobrar').innerText = `$${porCobrar.toFixed(2)}`;
+                document.getElementById('total-recaudado').innerText = `$${recaudado.toFixed(2)}`;
+
+                if(contenedor.innerHTML === "") {
+                    contenedor.innerHTML = '<p style="text-align: center; padding: 20px; color: #6B7280;">No quedan cuotas pendientes por procesar.</p>';
+                }
+
+            } catch (error) {
+                console.error("Error al cargar cobros: ", error);
+                contenedor.innerHTML = '<p style="text-align: center; padding: 20px; color: red;">Error al sincronizar con la nube.</p>';
+            }
+        }
+
+        function abrirModalCobro(idPrestamo, nombre, numCuota, montoFaltante, prestamoCompleto) {
+            idPrestamoSeleccionado = idPrestamo;
+            numeroCuotaSeleccionada = numCuota;
+            cuotaSugeridaSeleccionada = montoFaltante;
+            datosCompletosPrestamo = prestamoCompleto;
+
+            modalClienteNombre.innerText = nombre;
+            modalCuotaSugerida.innerText = `Balance de la cuota: $${montoFaltante.toFixed(2)}`;
+            montoIngresadoInput.value = montoFaltante.toFixed(2);
+            modalCobro.classList.add('open');
+            montoIngresadoInput.focus();
+        }
+
+        function cerrarModalCobro() {
+            modalCobro.classList.remove('open');
+            montoIngresadoInput.value = "";
+        }
+
+        async function procesarPagoYTicket() {
+            const montoPago = parseFloat(montoIngresadoInput.value);
+            if (isNaN(montoPago) || montoPago <= 0) {
+                alert("Por favor ingresa un monto válido.");
+                return;
+            }
+
+            btnGuardarPago.disabled = true;
+            btnGuardarPago.innerText = "Guardando...";
+
+            try {
+                const prestamoRef = doc(db, "prestamos", idPrestamoSeleccionado);
+                const cuotasActualizadas = datosCompletosPrestamo.cuotas_detalle.map(cuota => {
+                    if (cuota.numero === numeroCuotaSeleccionada) {
+                        const abonoPrevio = cuota.monto_abonado || 0;
+                        const nuevoMontoAbonado = abonoPrevio + montoPago;
+
+                        // 🛠️ LOGICA DE ABONOS PARCIALES:
+                        if (nuevoMontoAbonado >= cuota.monto_cuota) {
+                            cuota.status = 'Pagado';
+                        } else {
+                            cuota.status = 'Abonado'; // Mantiene la cuota abierta
+                        }
+                        cuota.monto_abonado = nuevoMontoAbonado;
+                    }
+                    return cuota;
+                });
+
+                // Actualizamos Firebase
+                await updateDoc(prestRef, { cuotas_detalle: cuotasActualizadas });
+
+                // Actualizamos totales en la vista local
+                recaudado += montoPago;
+                porCobrar -= montoPago;
+                document.getElementById('total-recaudado').innerText = `$${recaudado.toFixed(2)}`;
+                document.getElementById('total-por-cobrar').innerText = `$${porCobrar.toFixed(2)}`;
+
+                // Modificamos estatus en la tarjeta
+                document.getElementById(`btn-${idPrestamoSeleccionado}`).style.display = "none";
+                document.getElementById(`badge-${idPrestamoSeleccionado}`).style.display = "block";
+                document.getElementById(`card-${idPrestamoSeleccionado}`).classList.add('pagado');
+
+                alert("¡Cobro guardado con éxito en la nube!");
+                cerrarModalCobro();
+                await cargarCobrosDelDia(); // Recarga limpio
+
+            } catch (error) {
+                console.error("Error al procesar el cobro: ", error);
+                alert("Hubo un error al guardar el pago.");
+            } finally {
+                btnGuardarPago.disabled = false;
+                btnGuardarPago.innerText = "Confirmar Pago";
+            }
+        }
+    </script>
+</body>
+</html>

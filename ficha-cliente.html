@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRESTACOM 2.0 - Ficha del Cliente</title>
+    <link rel="stylesheet" href="css/variable.css">
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--color-background);
+            color: var(--color-text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--color-background);
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--color-primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+
+        /* DISEÑO DE LA FICHA / CARNET */
+        .ficha-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .foto-carnet-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .foto-marco {
+            width: 140px;
+            height: 160px;
+            background-color: #E5E7EB;
+            border: 4px solid white;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .foto-marco img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .foto-marco i {
+            font-size: 3rem;
+            color: #9CA3AF;
+        }
+
+        .cliente-nombre-main {
+            margin-top: 15px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--color-text-main);
+            text-align: center;
+        }
+
+        /* INFORMACIÓN DETALLADA */
+        .info-card {
+            background-color: var(--color-surface);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .info-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #F3F4F6;
+            padding-bottom: 8px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: #6B7280;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-size: 1rem;
+            color: var(--color-text-main);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            background-color: #D1FAE5;
+            color: #065F46;
+            margin-top: 5px;
+        }
+
+        .acciones-ficha {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-accion {
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .btn-llamada { background-color: #27AE60; color: white; }
+        .btn-whatsapp { background-color: #25D366; color: white; }
+        .btn-editar { background-color: #E5E7EB; color: #374151; grid-column: span 2; }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <a href="index.html" class="back-btn">⬅</a>
+            <h1>Ficha de Cliente</h1>
+        </header>
+
+        <main class="ficha-container" id="ficha-datos">
+            
+            <section class="foto-carnet-section">
+                <div class="foto-marco" id="marco-foto">
+                    <img id="img-cliente" src="https://via.placeholder.com/140x160?text=FOTO" alt="Foto del Cliente">
+                </div>
+                <h2 class="cliente-nombre-main" id="nombre-main">Cargando...</h2>
+                <div class="status-pill" id="status-cliente">Cliente Activo</div>
+            </section>
+
+            <div class="info-card">
+                <div class="info-row">
+                    <span class="info-label">Cédula / Documento</span>
+                    <span class="info-value" id="cedula-val">---</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Teléfono Principal</span>
+                    <span class="info-value" id="tel-val">---</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Dirección de Residencia</span>
+                    <span class="info-value" id="dir-val">---</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Ruta / Sector</span>
+                    <span class="info-value" id="sector-val">---</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Ocupación / Trabajo</span>
+                    <span class="info-value" id="trabajo-val">---</span>
+                </div>
+            </div>
+
+            <div class="acciones-ficha">
+                <a href="#" class="btn-accion btn-llamada" id="lnk-tel">📞 Llamar</a>
+                <a href="#" class="btn-accion btn-whatsapp" id="lnk-ws">💬 WhatsApp</a>
+                <button class="btn-accion btn-editar">✏️ Editar Información</button>
+            </div>
+
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        // CONFIGURACIÓN FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyC5oHQtFWzLqY3JdpV_3pKY40rx00o6Gu4",
+            authDomain: "prestacom-36ebd.firebaseapp.com",
+            projectId: "prestacom-36ebd",
+            storageBucket: "prestacom-36ebd.firebasestorage.app",
+            messagingSenderId: "787618813060",
+            appId: "1:787618813060:web:8bbdc1bea7960cdbad5ed1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // LEER ID DEL CLIENTE DE LA URL
+        const params = new URLSearchParams(window.location.search);
+        const idCliente = params.get('id');
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (!idCliente) {
+                alert("No se encontró el cliente.");
+                return;
+            }
+
+            try {
+                const docRef = doc(db, "clientes_prestamo", idCliente);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+
+                    // LLENAR LOS CAMPOS
+                    document.getElementById('nombre-main').innerText = data.nombre;
+                    document.getElementById('cedula-val').innerText = data.cedula || "No registrada";
+                    document.getElementById('tel-val').innerText = data.telefono || "---";
+                    document.getElementById('dir-val').innerText = data.direccion || "No registrada";
+                    document.getElementById('sector-val').innerText = data.ruta_sector || "General";
+                    document.getElementById('trabajo-val').innerText = data.ocupacion || "---";
+                    
+                    // Manejo de la foto (si tienes el campo 'foto_url' en Firebase)
+                    if (data.foto_url) {
+                        document.getElementById('img-cliente').src = data.foto_url;
+                    }
+
+                    // Configurar botones de contacto
+                    if (data.telefono) {
+                        document.getElementById('lnk-tel').href = `tel:${data.telefono}`;
+                        document.getElementById('lnk-ws').href = `https://wa.me/1${data.telefono.replace(/\D/g,'')}`;
+                    }
+                }
+            } catch (error) {
+                console.error("Error cargando ficha:", error);
+            }
+        });
+    </script>
+</body>
+</html>

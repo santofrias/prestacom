@@ -375,7 +375,7 @@
                 const q = query(
                     collection(db, "prestamos"),
                     where("id_cliente", "==", idCliente),
-                    where("status", "==", "Activo") // Solo el préstamo vivo
+                    where("status", "==", "Activo") // Solo nos interesa el préstamo vivo
                 );
 
                 const querySnapshot = await getDocs(q);
@@ -390,14 +390,14 @@
 
                 let prestamoDoc = querySnapshot.docs[0].data();
                 
-                // 🔑 REAJUSTE SEGURO DE DINERO: Busca tanto monto_prestado como monto
+                // 🔑 CORRECCIÓN DEL MONTO PRESTADO: Busca de forma inteligente monto_prestado o monto
                 const numMonto = Number(prestamoDoc.monto_prestado) || Number(prestamoDoc.monto) || 0;
                 const numBalance = Number(prestamoDoc.balance_pendiente) || 0;
                 
-                // 🔑 REAJUSTE SEGURO DE MODALIDAD: Captura el campo con espacios de Firestore
+                // 🔑 REAJUSTE DE LA MODALIDAD ASIGNADA
                 const modalidadReal = prestamoDoc['modalidad de pago'] || prestamoDoc.modalidad || 'Diario';
                 
-                // Desglose matemático de las cuotas
+                // Desglose de las cuotas basadas en tu base de datos
                 let cuotasTotales = 0;
                 let cuotasPagadas = 0;
                 let cuotasPendientes = 0;
@@ -456,6 +456,7 @@
                 const formData = new FormData();
                 formData.append("image", archivo);
 
+                // Recuerda cambiar esta llave genérica por tu API Key propia de ImgBB cuando inicies sesión
                 const respuesta = await fetch("https://api.imgbb.com/1/upload?key=6be0e3500d43a60cbdfbf6c166d3a843", {
                     method: "POST",
                     body: formData

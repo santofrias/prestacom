@@ -401,7 +401,7 @@
                             <div class="cobro-action">
                                 <span class="monto-cuota">$${montoFaltante.toFixed(2)}</span>
                                 <button class="btn-cobrar" id="btn-${idPrestamo}">Cobrar</button>
-                                <span class="badge-cobrado" id="badge-${idPrestamo}">Cobrado</span>
+                                <span class="badge-cobrado" id="badge-${idPrestamo}" style="display: none;">Cobrado</span>
                             </div>
                         `;
                         contenedor.appendChild(card);
@@ -461,7 +461,7 @@
                         const abonoPrevio = cuota.monto_abonado || 0;
                         const nuevoMontoAbonado = abonoPrevio + montoPago;
 
-                        // 🛠️ LOGICA DE ABONOS PARCIALES:
+                        // LOGICA DE ABONOS PARCIALES:
                         if (nuevoMontoAbonado >= cuota.monto_cuota) {
                             cuota.status = 'Pagado';
                         } else {
@@ -472,8 +472,8 @@
                     return cuota;
                 });
 
-                // Actualizamos Firebase
-                await updateDoc(prestRef, { cuotas_detalle: cuotasActualizadas });
+                // Actualizamos Firebase (CORREGIDO: prestamoRef en vez de prestRef)
+                await updateDoc(prestamoRef, { cuotas_detalle: cuotasActualizadas });
 
                 // Actualizamos totales en la vista local
                 recaudado += montoPago;

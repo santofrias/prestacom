@@ -155,7 +155,6 @@
     </div>
 
     <script>
-        // Buscador en vivo optimizado y protegido contra nulos
         function filtrarClientes() {
             const textoBuscado = document.getElementById('buscador').value.toLowerCase();
             const tarjetas = document.getElementsByClassName('client-card');
@@ -212,7 +211,6 @@
                 return;
             }
 
-            // Mapeamos y ordenamos alfabéticamente por nombre para una mejor experiencia de usuario
             let listaClientes = [];
             snapshot.forEach((doc) => {
                 listaClientes.push({ id: doc.id, ...doc.data() });
@@ -225,8 +223,9 @@
             });
 
             listaClientes.forEach((cliente) => {
+                // CORREGIDO: Redirección limpia a ficha-cliente.html enviando el ID correcto
                 const tarjetaHTML = `
-                    <a href="perfil_cliente.html?id=${cliente.id}" class="client-card">
+                    <a href="ficha-cliente.html?id=${cliente.id}" class="client-card">
                         <div class="client-info">
                             <h3>${cliente.nombre || 'Sin Nombre'}</h3>
                             <div class="client-meta">

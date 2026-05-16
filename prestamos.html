@@ -290,11 +290,12 @@
                         fechaFin = ultimaCuota ? ultimaCuota.fecha_vencimiento : 'N/A';
                     }
 
-                    const numMontoSolicitado = Number(prestamo.monto_solicitado) || 0;
-                    const numBalancePermanent = Number(prestamo.balance_pendiente) || 0;
+                    // 🔑 DETECCIÓN SEGURA DEL MONTO (Busca monto_prestado o monto)
+                    const numMontoReal = Number(prestamo.monto_prestado) || Number(prestamo.monto) || 0;
+                    const numBalanceReal = Number(prestamo.balance_pendiente) || 0;
 
                     // 🔑 LECTURA SEGURA DE LA MODALIDAD ASIGNADA
-                    const modalidaReal = prestamo['modalidad de pago'] || prestamo.modalidad || 'Diario';
+                    const modalidadReal = prestamo['modalidad de pago'] || prestamo.modalidad || 'Diario';
 
                     const tarjeta = document.createElement('div');
                     tarjeta.className = "loan-card";
@@ -306,7 +307,7 @@
                                 <h3>${prestamo.nombre_cliente || 'Cliente'}</h3>
                                 <div class="loan-date">
                                     📅 Del: <strong>${fechaInicio}</strong> al <strong>${fechaFin}</strong><br>
-                                    🔄 Modalidad: ${modalidaReal}
+                                    🔄 Modalidad: ${modalidadReal}
                                 </div>
                             </div>
                             <span class="status-badge ${claseBadge}">${textoBadge}</span>
@@ -314,11 +315,11 @@
                         <div class="loan-details">
                             <div class="detail-item">
                                 <span>Monto Prestado</span>
-                                <strong>$${numMontoSolicitado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+                                <strong>$${numMontoReal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
                             </div>
                             <div class="detail-item">
                                 <span>Balance Pendiente</span>
-                                <strong class="mamei-text">$${numBalancePermanent.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+                                <strong class="mamei-text">$${numBalanceReal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
                             </div>
                         </div>
                     `;
@@ -371,7 +372,7 @@
                         tarjetas[i].style.display = "none";
                     }
                 } else if (estadoTarjeta === estado) {
-                    document.getElementsByClassName('loan-card')[i].style.display = "flex";
+                    tarjetas[i].style.display = "flex";
                 } else {
                     tarjetas[i].style.display = "none";
                 }

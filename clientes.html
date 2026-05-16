@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRESTACOM 2.0 - Clientes</title>
-    <link rel="stylesheet" href="css/variable.css">
+    <link class="css-link" rel="stylesheet" href="css/variable.css">
     
     <style>
         * {
@@ -212,11 +212,21 @@
                 return;
             }
 
+            // Mapeamos y ordenamos alfabéticamente por nombre para una mejor experiencia de usuario
+            let listaClientes = [];
             snapshot.forEach((doc) => {
-                const cliente = doc.data();
-                
+                listaClientes.push({ id: doc.id, ...doc.data() });
+            });
+
+            listaClientes.sort((a, b) => {
+                const nameA = (a.nombre || "").toLowerCase();
+                const nameB = (b.nombre || "").toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+
+            listaClientes.forEach((cliente) => {
                 const tarjetaHTML = `
-                    <a href="perfil_cliente.html?id=${doc.id}" class="client-card">
+                    <a href="perfil_cliente.html?id=${cliente.id}" class="client-card">
                         <div class="client-info">
                             <h3>${cliente.nombre || 'Sin Nombre'}</h3>
                             <div class="client-meta">

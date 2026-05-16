@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRESTACOM 2.0 - Nuevo Préstamo</title>
-    <link rel="stylesheet" href="css/variable.css">
+    <link class="css-link" rel="stylesheet" href="css/variable.css">
     
     <style>
         * {
@@ -61,7 +61,7 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
-            padding-bottom: 100px; 
+            padding-bottom: 110px; 
         }
 
         .card {
@@ -120,6 +120,18 @@
 
         .info-termino strong {
             color: var(--color-primary);
+        }
+
+        /* Alerta visual de reenganche */
+        .reenganche-alert {
+            background-color: rgba(39, 174, 96, 0.08);
+            border: 1px solid #27AE60;
+            color: #27AE60;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 0.88rem;
+            font-weight: 600;
         }
 
         .table-container {
@@ -206,13 +218,16 @@
     <div class="app-container">
         <header>
             <a href="index.html" class="back-btn">⬅</a>
-            <h1>Nuevo Préstamo</h1>
+            <h1 id="titulo-pantalla">Nuevo Préstamo</h1>
         </header>
 
         <form id="form-prestamo">
             
             <div class="card">
                 <div class="card-title">Asignar Cliente</div>
+                
+                <div id="contenedor-alerta-reenganche" style="display: none;"></div>
+
                 <div class="input-group">
                     <label for="select-cliente">Selecciona el Cliente</label>
                     <select id="select-cliente" required>
@@ -230,7 +245,7 @@
                 </div>
 
                 <div class="input-group">
-                    <label for="monto">Monto Prestado ($)</label>
+                    <label for="monto">Nuevo Capital Solicitado ($)</label>
                     <input type="number" id="monto" placeholder="Ej. 10000" min="1" required>
                 </div>
 
@@ -252,6 +267,11 @@
                 <div class="input-group">
                     <label for="cuotas">Cantidad de Cuotas</label>
                     <input type="number" id="cuotas" placeholder="Ej. 6" min="1" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="dias-gracia">Días de Gracia Permitidos</label>
+                    <input type="number" id="dias-gracia" value="0" min="0" placeholder="Ej. 3">
                 </div>
             </div>
 
@@ -288,7 +308,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, addDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC5oHQtFWzLqY3JdpV_3pKY40rx00o6Gu4",
@@ -312,12 +332,29 @@
         let cuotasCalculadas = [];
         let fechaFinalPrestamo = "";
 
+        // Variables de control de Reenganche
+        let idPrestamoAnterior = null;
+        let saldoArrastradoMora = 0;
+
         window.addEventListener('DOMContentLoaded', async () => {
             const hoy = new Date();
             const dia = String(hoy.getDate()).padStart(2, '0');
             const mes = String(hoy.getMonth() + 1).padStart(2, '0');
             const año = hoy.getFullYear();
             document.getElementById('fecha-inicio').value = `${año}-${mes}-${dia}`;
+
+            // Parsear parámetros URL para verificar si es un Reenganche
+            const parametrosUrl = new URLSearchParams(window.location.search);
+            idPrestamoAnterior = parametrosUrl.get('reenganche');
+            saldoArrastradoMora = parseFloat(parametrosUrl.get('saldo')) || 0;
+
+            if (idPrestamoAnterior) {
+                document.getElementById('titulo-pantalla').innerText = "Reenganche de Préstamo";
+                const alertaBox = document.getElementById('contenedor-alerta-reenganche');
+                alertaBox.className = "reenganche-alert";
+                alertaBox.innerHTML = `🔄 REENGANCHE ACTIVADO: Se liquidará el préstamo anterior y se sumará un balance pendiente de $${saldoArrastradoMora.toLocaleString('en-US', {minimumFractionDigits: 2})} al nuevo pagaré.`;
+                alertaBox.style.display = "block";
+            }
 
             await cargarClientesDesplegable();
         });
@@ -335,14 +372,29 @@
                     return;
                 }
 
+                // Si viene preseleccionado un cliente por reenganche, buscaremos su ID
+                const parametrosUrl = new URLSearchParams(window.location.search);
+                const idClientePreseleccionado = parametrosUrl.get('cliente_id');
+
                 querySnapshot.forEach((doc) => {
                     const datos = doc.data();
                     const option = document.createElement('option');
                     option.value = doc.id;
                     option.setAttribute('data-nombre', datos.nombre);
                     option.textContent = `${datos.nombre} (${datos.ruta_sector || 'Sin sector'})`;
+                    
+                    if (idClientePreseleccionado && doc.id === idClientePreseleccionado) {
+                        option.selected = true;
+                    }
+                    
                     selectCliente.appendChild(option);
                 });
+
+                // Si es reenganche, congelamos el select para que no cambien de cliente por error
+                if (idPrestamoAnterior) {
+                    selectCliente.style.pointerEvents = "none";
+                    selectCliente.style.backgroundColor = "#E5E7EB";
+                }
 
             } catch (error) {
                 console.error("Error cargando clientes:", error);
@@ -359,19 +411,21 @@
 
         function verificarCalculo() {
             const fechaInput = document.getElementById('fecha-inicio').value;
-            const monto = parseFloat(document.getElementById('monto').value);
+            const montoNuevo = parseFloat(document.getElementById('monto').value);
             const interesPorcentaje = parseFloat(document.getElementById('interes').value);
             const diasModalidad = parseInt(document.getElementById('modalidad').value);
             const totalCuotas = parseInt(document.getElementById('cuotas').value);
             const select = document.getElementById('select-cliente');
 
-            if (!select.value || !fechaInput || isNaN(monto) || isNaN(interesPorcentaje) || isNaN(totalCuotas) || monto <= 0 || totalCuotas <= 0) {
+            if (!select.value || !fechaInput || isNaN(montoNuevo) || isNaN(interesPorcentaje) || isNaN(totalCuotas) || montoNuevo <= 0 || totalCuotas <= 0) {
                 alert("Por favor, selecciona un cliente, ingresa una fecha válida y llena todos los campos.");
                 return false;
             }
 
-            const gananciaInteres = monto * (interesPorcentaje / 100);
-            const totalPagar = monto + gananciaInteres;
+            // 🔄 LÓGICA DE REENGANCHE: El capital base para el interés incluye el saldo anterior refinanciado
+            const capitalTotalBase = montoNuevo + saldoArrastradoMora;
+            const gananciaInteres = capitalTotalBase * (interesPorcentaje / 100);
+            const totalPagar = capitalTotalBase + gananciaInteres;
             const valorCuota = (totalPagar / totalCuotas).toFixed(2);
 
             const tbody = document.getElementById('tabla-cuotas-body');
@@ -397,7 +451,7 @@
                     <tr>
                         <td>#${i}</td>
                         <td>${fechaFormateada}</td>
-                        <td><strong>$${valorCuota}</strong></td>
+                        <td><strong>$${Number(valorCuota).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong></td>
                         <td><span class="status-badge status-pendiente">Pendiente</span></td>
                     </tr>
                 `;
@@ -408,19 +462,23 @@
                 }
             }
 
-            // Inyección del módulo visual de ganancias sugerido por el prestamista
             const infoResumen = document.getElementById('info-resumen-ganancias');
             infoResumen.innerHTML = `
                 <div style="margin-bottom: 8px;">El préstamo finalizará el: <strong>${fechaFinalPrestamo}</strong></div>
                 <hr style="border: 0; border-top: 1px solid rgba(255, 102, 0, 0.15); margin: 8px 0;">
                 <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-top: 5px;">
-                    <span>Capital Entregado:</span> <strong>$${monto.toLocaleString()}</strong>
+                    <span>Nuevo Capital Entregado:</span> <strong>$${montoNuevo.toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
                 </div>
+                ${saldoArrastradoMora > 0 ? `
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #C0392B; margin-top: 3px;">
+                    <span>Saldo Anterior Refinanciado:</span> <strong>+$${saldoArrastradoMora.toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
+                </div>
+                ` : ''}
                 <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #27AE60; margin-top: 3px;">
-                    <span>Ganancia por Interés (${interesPorcentaje}%):</span> <strong>+$${gananciaInteres.toLocaleString()}</strong>
+                    <span>Ganancia por Interés (${interesPorcentaje}%):</span> <strong>+$${gananciaInteres.toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 1.05rem; margin-top: 6px; padding-top: 4px; border-top: 1px dashed rgba(0,0,0,0.1);">
-                    <span style="color: var(--color-primary); font-weight: bold;">Total Neto a Cobrar:</span> <strong style="color: var(--color-primary); font-size: 1.1rem;">$${totalPagar.toLocaleString()}</strong>
+                    <span style="color: var(--color-primary); font-weight: bold;">Total Neto a Cobrar:</span> <strong style="color: var(--color-primary); font-size: 1.1rem;">$${totalPagar.toLocaleString('en-US', {minimumFractionDigits: 2})}</strong>
                 </div>
             `;
 
@@ -446,18 +504,27 @@
             const idCliente = selectElement.value;
             const nombreCliente = selectElement.options[selectElement.selectedIndex].getAttribute('data-nombre');
 
+            const montoNuevo = Number(document.getElementById('monto').value);
+            const interesPorcentaje = Number(document.getElementById('interes').value);
+            
+            // Cálculo del balance final incluyendo reenganche
+            const capitalTotalBase = montoNuevo + saldoArrastradoMora;
+            const balanceFinalCalculado = capitalTotalBase + (capitalTotalBase * (interesPorcentaje / 100));
+
             const nuevoPrestamo = {
                 id_empresa: idEmpresaLogueada,
                 id_cliente: idCliente,
                 nombre_cliente: nombreCliente,
                 fecha_inicio: document.getElementById('fecha-inicio').value,
                 fecha_termino: fechaFinalPrestamo,
-                monto_original: Number(document.getElementById('monto').value),
-                tasa_interes: Number(document.getElementById('interes').value),
+                monto_original: montoNuevo,
+                saldo_reenganchado: saldoArrastradoMora, // Trazabilidad del refinanciamiento
+                tasa_interes: interesPorcentaje,
                 modalidad_dias: parseInt(document.getElementById('modalidad').value),
                 cuotas_totales: parseInt(document.getElementById('cuotas').value),
                 cuotas_restantes: parseInt(document.getElementById('cuotas').value),
-                balance_pendiente: Number(document.getElementById('monto').value) + (Number(document.getElementById('monto').value) * (Number(document.getElementById('interes').value) / 100)),
+                balance_pendiente: balanceFinalCalculado,
+                dias_gracia: Number(document.getElementById('dias-gracia').value) || 0, // 🔑 SALVAMOS LOS DÍAS DE GRACIA
                 status: 'Activo',
                 fecha_registro: new Date().toISOString(),
                 creado_por: nombreUsuarioLogueado,
@@ -465,7 +532,19 @@
             };
 
             try {
+                // 1. Registrar el nuevo pagaré
                 await addDoc(collection(db, "prestamos"), nuevoPrestamo);
+                
+                // 2. Si vino de un reenganche, cerramos el pagaré viejo en Firestore automáticamente
+                if (idPrestamoAnterior) {
+                    const prestamoViejoRef = doc(db, "prestamos", idPrestamoAnterior);
+                    await updateDoc(prestamoViejoRef, {
+                        status: 'Finalizado',
+                        reenganchado_en: new Date().toISOString(),
+                        balance_pendiente: 0
+                    });
+                }
+
                 alert(`¡Préstamo para ${nombreCliente} generado con éxito!`);
                 window.location.href = "index.html";
             } catch (error) {

@@ -109,6 +109,13 @@
             background-color: #FFFFFF;
         }
 
+        input[readonly] {
+            background-color: #E5E7EB;
+            color: #374151;
+            cursor: not-allowed;
+            font-weight: 600;
+        }
+
         .info-termino {
             background-color: rgba(255, 102, 0, 0.05);
             border-left: 4px solid var(--color-primary);
@@ -228,9 +235,16 @@
                 
                 <div id="contenedor-alerta-reenganche" style="display: none;"></div>
 
-                <div class="input-group">
+                <input type="hidden" id="hidden-cliente-id">
+
+                <div class="input-group" id="grupo-cliente-reenganche" style="display: none;">
+                    <label>Cliente a Reenganchar</label>
+                    <input type="text" id="input-cliente-nombre" readonly>
+                </div>
+
+                <div class="input-group" id="grupo-cliente-regular">
                     <label for="select-cliente">Selecciona el Cliente</label>
-                    <select id="select-cliente" required>
+                    <select id="select-cliente">
                         <option value="">Cargando clientes de la nube...</option>
                     </select>
                 </div>
@@ -335,6 +349,7 @@
         // Variables de control de Reenganche
         let idPrestamoAnterior = null;
         let saldoArrastradoMora = 0;
+        let esReenganche = false;
 
         window.addEventListener('DOMContentLoaded', async () => {
             const hoy = new Date();
@@ -343,28 +358,46 @@
             const año = hoy.getFullYear();
             document.getElementById('fecha-inicio').value = `${año}-${mes}-${dia}`;
 
-            // Parsear parámetros URL para verificar si es un Reenganche
+            // Parsear parámetros URL
             const parametrosUrl = new URLSearchParams(window.location.search);
             idPrestamoAnterior = parametrosUrl.get('reenganche');
             saldoArrastradoMora = parseFloat(parametrosUrl.get('saldo')) || 0;
+            
+            // Capturamos el ID y Nombre del cliente directo de la URL
+            const idClienteUrl = parametrosUrl.get('cliente_id');
+            const nombreClienteUrl = parametrosUrl.get('nombre_cliente');
 
-            if (idPrestamoAnterior) {
+            if (idPrestamoAnterior && idClienteUrl) {
+                esReenganche = true;
                 document.getElementById('titulo-pantalla').innerText = "Reenganche de Préstamo";
+                
+                // Alerta Visual
                 const alertaBox = document.getElementById('contenedor-alerta-reenganche');
                 alertaBox.className = "reenganche-alert";
                 alertaBox.innerHTML = `🔄 REENGANCHE ACTIVADO: Se liquidará el préstamo anterior y se sumará un balance pendiente de $${saldoArrastradoMora.toLocaleString('en-US', {minimumFractionDigits: 2})} al nuevo pagaré.`;
                 alertaBox.style.display = "block";
-            }
 
-            await cargarClientesDesplegable();
+                // Guardar datos en la interfaz fija e input oculto
+                document.getElementById('hidden-cliente-id').value = idClienteUrl;
+                document.getElementById('input-cliente-nombre').value = nombreClienteUrl || "Cliente Seleccionado";
+                
+                // Intercambiar interfaces
+                document.getElementById('grupo-cliente-regular').style.display = "none";
+                document.getElementById('grupo-cliente-reenganche').style.display = "flex";
+                
+                // Desactivar el required del select original ya que usaremos el hidden
+                document.getElementById('select-cliente').removeAttribute('required');
+            } else {
+                // Si es flujo normal, activamos obligatoriedad en el select y cargamos la lista
+                document.getElementById('select-cliente').setAttribute('required', 'true');
+                await cargarClientesDesplegable();
+            }
         });
 
         async function cargarClientesDesplegable() {
             const selectCliente = document.getElementById('select-cliente');
-            
             try {
                 let querySnapshot = await getDocs(query(collection(db, "clientes_prestamo"), where("id_empresa", "==", idEmpresaLogueada)));
-                
                 selectCliente.innerHTML = '<option value="">-- Elige un deudor --</option>';
 
                 if (querySnapshot.empty) {
@@ -372,30 +405,14 @@
                     return;
                 }
 
-                // Si viene preseleccionado un cliente por reenganche, buscaremos su ID
-                const parametrosUrl = new URLSearchParams(window.location.search);
-                const idClientePreseleccionado = parametrosUrl.get('cliente_id');
-
                 querySnapshot.forEach((doc) => {
                     const datos = doc.data();
                     const option = document.createElement('option');
                     option.value = doc.id;
                     option.setAttribute('data-nombre', datos.nombre);
                     option.textContent = `${datos.nombre} (${datos.ruta_sector || 'Sin sector'})`;
-                    
-                    if (idClientePreseleccionado && doc.id === idClientePreseleccionado) {
-                        option.selected = true;
-                    }
-                    
                     selectCliente.appendChild(option);
                 });
-
-                // Si es reenganche, congelamos el select para que no cambien de cliente por error
-                if (idPrestamoAnterior) {
-                    selectCliente.style.pointerEvents = "none";
-                    selectCliente.style.backgroundColor = "#E5E7EB";
-                }
-
             } catch (error) {
                 console.error("Error cargando clientes:", error);
                 selectCliente.innerHTML = '<option value="">Error al cargar la lista</option>';
@@ -415,14 +432,15 @@
             const interesPorcentaje = parseFloat(document.getElementById('interes').value);
             const diasModalidad = parseInt(document.getElementById('modalidad').value);
             const totalCuotas = parseInt(document.getElementById('cuotas').value);
-            const select = document.getElementById('select-cliente');
+            
+            // Validación de ID de cliente según el flujo
+            const idClienteValido = esReenganche ? document.getElementById('hidden-cliente-id').value : document.getElementById('select-cliente').value;
 
-            if (!select.value || !fechaInput || isNaN(montoNuevo) || isNaN(interesPorcentaje) || isNaN(totalCuotas) || montoNuevo <= 0 || totalCuotas <= 0) {
-                alert("Por favor, selecciona un cliente, ingresa una fecha válida y llena todos los campos.");
+            if (!idClienteValido || !fechaInput || isNaN(montoNuevo) || isNaN(interesPorcentaje) || isNaN(totalCuotas) || montoNuevo <= 0 || totalCuotas <= 0) {
+                alert("Por favor, llena todos los campos obligatorios con valores válidos.");
                 return false;
             }
 
-            // 🔄 LÓGICA DE REENGANCHE: El capital base para el interés incluye el saldo anterior refinanciado
             const capitalTotalBase = montoNuevo + saldoArrastradoMora;
             const gananciaInteres = capitalTotalBase * (interesPorcentaje / 100);
             const totalPagar = capitalTotalBase + gananciaInteres;
@@ -500,14 +518,21 @@
             btnGenerar.disabled = true;
             btnGenerar.innerText = "Registrando préstamo...";
 
-            const selectElement = document.getElementById('select-cliente');
-            const idCliente = selectElement.value;
-            const nombreCliente = selectElement.options[selectElement.selectedIndex].getAttribute('data-nombre');
+            let idCliente = "";
+            let nombreCliente = "";
+
+            if (esReenganche) {
+                idCliente = document.getElementById('hidden-cliente-id').value;
+                nombreCliente = document.getElementById('input-cliente-nombre').value;
+            } else {
+                const selectElement = document.getElementById('select-cliente');
+                idCliente = selectElement.value;
+                nombreCliente = selectElement.options[selectElement.selectedIndex].getAttribute('data-nombre');
+            }
 
             const montoNuevo = Number(document.getElementById('monto').value);
             const interesPorcentaje = Number(document.getElementById('interes').value);
             
-            // Cálculo del balance final incluyendo reenganche
             const capitalTotalBase = montoNuevo + saldoArrastradoMora;
             const balanceFinalCalculado = capitalTotalBase + (capitalTotalBase * (interesPorcentaje / 100));
 
@@ -518,13 +543,13 @@
                 fecha_inicio: document.getElementById('fecha-inicio').value,
                 fecha_termino: fechaFinalPrestamo,
                 monto_original: montoNuevo,
-                saldo_reenganchado: saldoArrastradoMora, // Trazabilidad del refinanciamiento
+                saldo_reenganchado: saldoArrastradoMora, 
                 tasa_interes: interesPorcentaje,
                 modalidad_dias: parseInt(document.getElementById('modalidad').value),
                 cuotas_totales: parseInt(document.getElementById('cuotas').value),
                 cuotas_restantes: parseInt(document.getElementById('cuotas').value),
                 balance_pendiente: balanceFinalCalculado,
-                dias_gracia: Number(document.getElementById('dias-gracia').value) || 0, // 🔑 SALVAMOS LOS DÍAS DE GRACIA
+                dias_gracia: Number(document.getElementById('dias-gracia').value) || 0, 
                 status: 'Activo',
                 fecha_registro: new Date().toISOString(),
                 creado_por: nombreUsuarioLogueado,
@@ -535,8 +560,8 @@
                 // 1. Registrar el nuevo pagaré
                 await addDoc(collection(db, "prestamos"), nuevoPrestamo);
                 
-                // 2. Si vino de un reenganche, cerramos el pagaré viejo en Firestore automáticamente
-                if (idPrestamoAnterior) {
+                // 2. Si vino de un reenganche, cerramos el pagaré viejo
+                if (esReenganche && idPrestamoAnterior) {
                     const prestamoViejoRef = doc(db, "prestamos", idPrestamoAnterior);
                     await updateDoc(prestamoViejoRef, {
                         status: 'Finalizado',

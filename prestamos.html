@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PRESTACOM 2.0 - Préstamos</title>
-    <link class="css-link" rel="stylesheet" href="css/variable.css">
     
     <style>
         * {
@@ -15,8 +14,8 @@
         }
 
         body {
-            background-color: var(--color-background);
-            color: var(--color-text-main);
+            background-color: #F9FAFB;
+            color: #1F2937;
             display: flex;
             justify-content: center;
             min-height: 100vh;
@@ -25,13 +24,13 @@
         .app-container {
             width: 100%;
             max-width: 480px;
-            background-color: var(--color-background);
+            background-color: #F9FAFB;
             display: flex;
             flex-direction: column;
         }
 
         header {
-            background-color: var(--color-primary);
+            background-color: #111827;
             color: white;
             padding: 15px 20px;
             display: flex;
@@ -61,7 +60,7 @@
             display: flex;
             gap: 8px;
             padding: 15px 20px;
-            background-color: var(--color-surface);
+            background-color: white;
             border-bottom: 1px solid #E5E7EB;
             overflow-x: auto;
         }
@@ -74,7 +73,7 @@
             font-size: 0.85rem;
             font-weight: 600;
             cursor: pointer;
-            color: var(--color-text-main);
+            color: #1F2937;
             white-space: nowrap;
         }
 
@@ -94,7 +93,7 @@
 
         /* Tarjeta de Préstamo */
         .loan-card {
-            background-color: var(--color-surface);
+            background-color: white;
             border-radius: 12px;
             padding: 15px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
@@ -166,7 +165,7 @@
 
         .detail-item strong {
             font-size: 0.95rem;
-            color: var(--color-text-main);
+            color: #1F2937;
         }
 
         .detail-item .mamei-text {
@@ -263,19 +262,15 @@
                         claseBadge = 'status-finalizado';
                     } else {
                         if (prestamo.cuotas_detalle && Array.isArray(prestamo.cuotas_detalle)) {
-                            // 🔑 DÍAS DE GRACIA: Leemos el campo desde la base de datos (por defecto 0 si no existe)
                             const diasGracia = Number(prestamo.dias_gracia) || 0;
 
                             const tieneMora = prestamo.cuotas_detalle.some(cuota => {
                                 if (cuota.status !== 'Pendiente') return false;
                                 
                                 const vencimiento = parsearFechaString(cuota.fecha_vencimiento);
-                                
-                                // Clonamos la fecha de vencimiento y le sumamos los días de gracia permitidos
                                 const fechaLimiteCobro = new Date(vencimiento);
                                 fechaLimiteCobro.setDate(fechaLimiteCobro.getDate() + diasGracia);
                                 
-                                // Cae en atraso solo si la fecha límite ya es menor que el día de hoy
                                 return fechaLimiteCobro < hoy;
                             });
 
@@ -287,7 +282,6 @@
                         }
                     }
 
-                    // 📅 Manejo inteligente de las fechas de Inicio y Fin
                     const fechaInicio = prestamo.fecha_inicio || (prestamo.fecha_registro ? prestamo.fecha_registro.split('T')[0] : 'N/A');
                     
                     let fechaFin = 'N/A';
@@ -296,12 +290,11 @@
                         fechaFin = ultimaCuota ? ultimaCuota.fecha_vencimiento : 'N/A';
                     }
 
-                    // 🛡️ CONTROL ANTIBUGS: Evitamos $NaN forzando conversión segura a número
                     const numMontoSolicitado = Number(prestamo.monto_solicitado) || 0;
-                    const numBalancePendiente = Number(prestamo.balance_pendiente) || 0;
+                    const numBalancePermanent = Number(prestamo.balance_pendiente) || 0;
 
-                    // 🔑 LEER CAMPO CON ESPACIOS DE FIRESTORE:
-                    const modalidadReal = prestamo['modalidad de pago'] || prestamo.modalidad || 'Diario';
+                    // 🔑 LECTURA SEGURA DE LA MODALIDAD ASIGNADA
+                    const modalidaReal = prestamo['modalidad de pago'] || prestamo.modalidad || 'Diario';
 
                     const tarjeta = document.createElement('div');
                     tarjeta.className = "loan-card";
@@ -313,7 +306,7 @@
                                 <h3>${prestamo.nombre_cliente || 'Cliente'}</h3>
                                 <div class="loan-date">
                                     📅 Del: <strong>${fechaInicio}</strong> al <strong>${fechaFin}</strong><br>
-                                    🔄 Modalidad: ${modalidadReal}
+                                    🔄 Modalidad: ${modalidaReal}
                                 </div>
                             </div>
                             <span class="status-badge ${claseBadge}">${textoBadge}</span>
@@ -325,7 +318,7 @@
                             </div>
                             <div class="detail-item">
                                 <span>Balance Pendiente</span>
-                                <strong class="mamei-text">$${numBalancePendiente.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+                                <strong class="mamei-text">$${numBalancePermanent.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
                             </div>
                         </div>
                     `;
@@ -378,7 +371,7 @@
                         tarjetas[i].style.display = "none";
                     }
                 } else if (estadoTarjeta === estado) {
-                    tarjetas[i].style.display = "flex";
+                    document.getElementsByClassName('loan-card')[i].style.display = "flex";
                 } else {
                     tarjetas[i].style.display = "none";
                 }

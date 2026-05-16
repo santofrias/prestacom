@@ -61,9 +61,15 @@
             margin-bottom: 10px;
         }
 
-        .foto-marco {
+        .foto-area-wrapper {
+            position: relative;
             width: 140px;
             height: 160px;
+        }
+
+        .foto-marco {
+            width: 100%;
+            height: 100%;
             background-color: #E5E7EB;
             border: 4px solid white;
             border-radius: 12px;
@@ -72,7 +78,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            position: relative;
         }
 
         .foto-marco img {
@@ -81,13 +86,32 @@
             object-fit: cover;
         }
 
-        .foto-marco i {
-            font-size: 3rem;
-            color: #9CA3AF;
+        /* Botón flotante para la cámara */
+        .btn-cambiar-foto {
+            position: absolute;
+            bottom: -10px;
+            right: -10px;
+            background-color: #FF6600;
+            color: white;
+            border: 3px solid white;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            font-size: 1.1rem;
+            transition: transform 0.2s;
+        }
+
+        .btn-cambiar-foto:active {
+            transform: scale(0.9);
         }
 
         .cliente-nombre-main {
-            margin-top: 15px;
+            margin-top: 20px;
             font-size: 1.4rem;
             font-weight: bold;
             color: var(--color-text-main);
@@ -166,22 +190,47 @@
         .btn-whatsapp { background-color: #25D366; color: white; }
         .btn-editar { background-color: #E5E7EB; color: #374151; grid-column: span 2; }
 
+        /* Estado cargando sobre la foto */
+        .loading-overlay {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: 4px;
+            bottom: 4px;
+            background-color: rgba(0,0,0,0.6);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: none;
+        }
+
     </style>
 </head>
 <body>
 
     <div class="app-container">
         <header>
-            <a href="index.html" class="back-btn">⬅</a>
+            <a href="clientes.html" class="back-btn">⬅</a>
             <h1>Ficha de Cliente</h1>
         </header>
 
         <main class="ficha-container" id="ficha-datos">
             
             <section class="foto-carnet-section">
-                <div class="foto-marco" id="marco-foto">
-                    <img id="img-cliente" src="https://via.placeholder.com/140x160?text=FOTO" alt="Foto del Cliente">
+                <div class="foto-area-wrapper">
+                    <div class="foto-marco" id="marco-foto">
+                        <img id="img-cliente" src="https://via.placeholder.com/140x160?text=SIN+FOTO" alt="Foto del Cliente">
+                    </div>
+                    <label for="input-foto" class="btn-cambiar-foto" title="Tomar Foto">📷</label>
+                    <input type="file" id="input-foto" accept="image/*" capture="environment" style="display: none;">
+                    
+                    <div class="loading-overlay" id="loading-foto">Subiendo...</div>
                 </div>
+                
                 <h2 class="cliente-nombre-main" id="nombre-main">Cargando...</h2>
                 <div class="status-pill" id="status-cliente">Cliente Activo</div>
             </section>
@@ -220,9 +269,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // CONFIGURACIÓN FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyC5oHQtFWzLqY3JdpV_3pKY40rx00o6Gu4",
             authDomain: "prestacom-36ebd.firebaseapp.com",
@@ -235,16 +283,22 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // LEER ID DEL CLIENTE DE LA URL
         const params = new URLSearchParams(window.location.search);
         const idCliente = params.get('id');
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (!idCliente) {
-                alert("No se encontró el cliente.");
+                alert("No se encontró el cliente en los parámetros.");
                 return;
             }
 
+            await cargarDatosCliente();
+
+            // Escuchar cuando el cobrador seleccione o tome una foto
+            document.getElementById('input-foto').addEventListener('change', manejarCambioFoto);
+        });
+
+        async function cargarDatosCliente() {
             try {
                 const docRef = doc(db, "clientes_prestamo", idCliente);
                 const docSnap = await getDoc(docRef);
@@ -252,20 +306,20 @@
                 if (docSnap.exists()) {
                     const data = docSnap.data();
 
-                    // LLENAR LOS CAMPOS
-                    document.getElementById('nombre-main').innerText = data.nombre;
+                    document.getElementById('nombre-main').innerText = data.nombre || "Sin Nombre";
                     document.getElementById('cedula-val').innerText = data.cedula || "No registrada";
                     document.getElementById('tel-val').innerText = data.telefono || "---";
                     document.getElementById('dir-val').innerText = data.direccion || "No registrada";
                     document.getElementById('sector-val').innerText = data.ruta_sector || "General";
                     document.getElementById('trabajo-val').innerText = data.ocupacion || "---";
                     
-                    // Manejo de la foto (si tienes el campo 'foto_url' en Firebase)
+                    // Si el cliente ya tiene foto en la base de datos, la muestra
                     if (data.foto_url) {
                         document.getElementById('img-cliente').src = data.foto_url;
+                    } else {
+                        document.getElementById('img-cliente').src = "https://via.placeholder.com/140x160?text=SIN+FOTO";
                     }
 
-                    // Configurar botones de contacto
                     if (data.telefono) {
                         document.getElementById('lnk-tel').href = `tel:${data.telefono}`;
                         document.getElementById('lnk-ws').href = `https://wa.me/1${data.telefono.replace(/\D/g,'')}`;
@@ -274,7 +328,51 @@
             } catch (error) {
                 console.error("Error cargando ficha:", error);
             }
-        });
+        }
+
+        async function manejarCambioFoto(evento) {
+            const archivo = evento.target.files[0];
+            if (!archivo) return;
+
+            const overlayCarga = document.getElementById('loading-foto');
+            overlayCarga.style.display = "flex"; // Mostrar "Subiendo..."
+
+            try {
+                // 1. Convertir la imagen a FormData para subirla a un servidor de imágenes gratuito y rápido
+                const formData = new FormData();
+                formData.append("image", archivo);
+
+                // Usamos una clave pública de ImgBB para almacenar las fotos de forma externa y rápida
+                const respuesta = await fetch("https://api.imgbb.com/1/upload?key=6be0e3500d43a60cbdfbf6c166d3a843", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const resultadoJson = await respuesta.json();
+
+                if (resultadoJson.success) {
+                    const urlFotoGenerada = resultadoJson.data.url;
+
+                    // 2. Guardar esa URL de texto en el documento del cliente en Firestore
+                    const clienteRef = doc(db, "clientes_prestamo", idCliente);
+                    await updateDoc(clienteRef, {
+                        foto_url: urlFotoGenerada
+                    });
+
+                    // 3. Actualizar la vista de la foto inmediatamente sin recargar la página
+                    document.getElementById('img-cliente').src = urlFotoGenerada;
+                    alert("¡Foto del cliente actualizada con éxito!");
+                } else {
+                    alert("No se pudo procesar la imagen. Intenta de nuevo.");
+                }
+
+            } catch (error) {
+                console.error("Error al subir la foto:", error);
+                alert("Hubo un error de conexión al subir la foto.");
+            } finally {
+                overlayCarga.style.display = "none"; // Ocultar capa de carga
+            }
+        }
     </script>
 </body>
 </html>

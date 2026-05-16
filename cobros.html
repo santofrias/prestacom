@@ -1,307 +1,4 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRESTACOM 2.0 - Cobros del Día</title>
-    <link rel="stylesheet" href="css/variable.css">
-    
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--color-background);
-            color: var(--color-text-main);
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-        }
-
-        .app-container {
-            width: 100%;
-            max-width: 480px;
-            background-color: var(--color-background);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        header {
-            background-color: var(--color-primary);
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            align-items: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        .back-btn {
-            text-decoration: none;
-            color: white;
-            font-size: 1.5rem;
-            margin-right: 15px;
-            display: flex;
-            align-items: center;
-        }
-
-        header h1 {
-            font-size: 1.25rem;
-            font-weight: bold;
-        }
-
-        .summary-card {
-            background-color: var(--color-surface);
-            margin: 15px 20px 5px 20px;
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid rgba(0,0,0,0.03);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            display: flex;
-            justify-content: space-between;
-            text-align: center;
-        }
-
-        .summary-item span {
-            display: block;
-            font-size: 0.75rem;
-            color: #6B7280;
-            margin-bottom: 4px;
-        }
-
-        .summary-item strong {
-            font-size: 1.1rem;
-            color: var(--color-text-main);
-        }
-
-        .summary-item .mamei-text {
-            color: #FF6600;
-        }
-
-        .cobros-list {
-            padding: 15px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .cobro-card {
-            background-color: var(--color-surface);
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            border: 1px solid rgba(0,0,0,0.03);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: opacity 0.3s;
-        }
-
-        .cobro-card.pagado {
-            opacity: 0.6;
-        }
-
-        .cobro-info h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .cobro-meta {
-            font-size: 0.8rem;
-            color: #6B7280;
-        }
-
-        .sector-badge {
-            background-color: #F3F4F6;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            margin-left: 5px;
-            font-weight: 600;
-        }
-
-        .cobro-action {
-            text-align: right;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            align-items: flex-end;
-        }
-
-        .monto-cuota {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--color-text-main);
-        }
-
-        .btn-cobrar {
-            background-color: #FF6600;
-            color: white;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(255, 102, 0, 0.15);
-        }
-
-        .badge-cobrado {
-            background-color: #10B981;
-            color: white;
-            font-weight: bold;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-        }
-
-        /* ESTILOS DEL MODAL FLOTANTE */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-        }
-
-        .modal-overlay.open {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-content {
-            background-color: white;
-            width: 90%;
-            max-width: 400px;
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .modal-header h2 {
-            font-size: 1.15rem;
-            color: var(--color-text-main);
-        }
-
-        .modal-header p {
-            font-size: 0.85rem;
-            color: #6B7280;
-            margin-top: 2px;
-        }
-
-        .modal-body label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: block;
-            margin-bottom: 6px;
-        }
-
-        .modal-body input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #D1D5DB;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--color-text-main);
-            text-align: center;
-        }
-
-        .modal-body input:focus {
-            outline: none;
-            border-color: #FF6600;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-cancelar {
-            flex: 1;
-            background-color: #E5E7EB;
-            color: var(--color-text-main);
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .btn-confirmar {
-            flex: 1;
-            background-color: #FF6600;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(255, 102, 0, 0.2);
-        }
-    </style>
-</head>
-<body>
-
-    <div class="app-container">
-        <header>
-            <a href="index.html" class="back-btn">⬅</a>
-            <h1>Cobros de Hoy</h1>
-        </header>
-
-        <div class="summary-card">
-            <div class="summary-item">
-                <span>Por Cobrar Hoy</span>
-                <strong id="total-por-cobrar">$0.00</strong>
-            </div>
-            <div class="summary-item">
-                <span>Recaudado</span>
-                <strong class="mamei-text" id="total-recaudado">$0.00</strong>
-            </div>
-        </div>
-
-        <main class="cobros-list" id="contenedor-cobros">
-            <p style="text-align: center; padding: 20px; color: #6B7280;">Buscando ruta en la nube...</p>
-        </main>
-    </div>
-
-    <div class="modal-overlay" id="modal-cobro">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-cliente-nombre">Cobrar a Cliente</h2>
-                <p id="modal-cuota-sugerida">Cuota regular: $0.00</p>
-            </div>
-            <div class="modal-body">
-                <label for="monto-ingresado">Monto Recibido ($)</label>
-                <input type="number" id="monto-ingresado" step="0.01" min="0">
-            </div>
-            <div class="modal-footer">
-                <button class="btn-cancelar" id="btn-cerrar-modal">Cancelar</button>
-                <button class="btn-confirmar" id="btn-guardar-pago">Confirmar Pago</button>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, query, where, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
@@ -337,6 +34,15 @@
         const btnCerrarModal = document.getElementById('btn-cerrar-modal');
         const btnGuardarPago = document.getElementById('btn-guardar-pago');
 
+        // Función auxiliar para obtener la fecha de hoy en formato DD-MM-YYYY
+        function obtenerFechaHoy() {
+            const hoy = new Date();
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const anio = hoy.getFullYear();
+            return `${dia}-${mes}-${anio}`;
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
             await cargarCobrosDelDia();
             btnCerrarModal.addEventListener('click', cerrarModalCobro);
@@ -354,23 +60,33 @@
                 if (querySnapshot.empty) {
                     contenedor.innerHTML = '<p style="text-align: center; padding: 20px; color: #6B7280;">No hay cobros pendientes registrados para hoy.</p>';
                     document.getElementById('total-por-cobrar').innerText = "$0.00";
+                    document.getElementById('total-recaudado').innerText = "$0.00";
                     return;
                 }
 
                 contenedor.innerHTML = "";
                 porCobrar = 0;
-                recaudado = 0;
+                recaudado = 0; // Reiniciamos para recalcular limpiamente desde la base de datos
+                
+                const fechaHoyStr = obtenerFechaHoy();
                 const clientesCache = {};
 
                 for (const documento of querySnapshot.docs) {
                     const prestamo = documento.data();
                     const idPrestamo = documento.id;
                     
-                    // Buscamos la cuota pendiente
+                    // 1. Buscamos si hay cobros que se hicieron HOY para sumarlos al Recaudado del día
+                    prestamo.cuotas_detalle.forEach(cuota => {
+                        if (cuota.fecha_pago === fechaHoyStr) {
+                            // Sumamos el último abono o el monto que se pagó hoy
+                            recaudado += (cuota.monto_ultimo_pago_dia || cuota.monto_cuota);
+                        }
+                    });
+
+                    // 2. Buscamos la cuota que está actualmente pendiente o abonada para mostrar en la lista
                     const cuotaPendiente = prestamo.cuotas_detalle.find(c => c.status === 'Pendiente' || c.status === 'Abonado');
 
                     if (cuotaPendiente) {
-                        // Si la cuota tiene abonos previos, calculamos lo que realmente le falta por pagar
                         const montoFaltante = cuotaPendiente.monto_cuota - (cuotaPendiente.monto_abonado || 0);
                         porCobrar += montoFaltante;
 
@@ -389,13 +105,16 @@
                             }
                         }
 
+                        // Validar número de cuota para evitar el 'undefined'
+                        const nCuota = cuotaPendiente.numero || cuotaPendiente.numero_cuota || cuotaPendiente.id_cuota || "?";
+
                         const card = document.createElement('div');
                         card.className = "cobro-card";
                         card.id = `card-${idPrestamo}`;
                         card.innerHTML = `
                             <div class="cobro-info">
                                 <h3>${nombreCliente} <span class="sector-badge">${sector}</span></h3>
-                                <p class="cobro-meta">Cuota #${cuotaPendiente.numero} - Vence: ${cuotaPendiente.fecha_vencimiento}</p>
+                                <p class="cobro-meta">Cuota #${nCuota} - Vence: ${cuotaPendiente.fecha_vencimiento}</p>
                                 ${cuotaPendiente.monto_abonado > 0 ? `<p class="cobro-meta" style="color: #FF6600; font-weight:bold;">Abonado previamente: $${cuotaPendiente.monto_abonado.toFixed(2)}</p>` : ''}
                             </div>
                             <div class="cobro-action">
@@ -406,13 +125,13 @@
                         `;
                         contenedor.appendChild(card);
 
-                        // Evento click para abrir el modal flotante
                         document.getElementById(`btn-${idPrestamo}`).addEventListener('click', () => {
-                            abrirModalCobro(idPrestamo, nombreCliente, cuotaPendiente.numero, montoFaltante, prestamo);
+                            abrirModalCobro(idPrestamo, nombreCliente, nCuota, montoFaltante, prestamo);
                         });
                     }
                 }
 
+                // Pintamos los totales finales en las tarjetas superiores
                 document.getElementById('total-por-cobrar').innerText = `$${porCobrar.toFixed(2)}`;
                 document.getElementById('total-recaudado').innerText = `$${recaudado.toFixed(2)}`;
 
@@ -455,40 +174,38 @@
             btnGuardarPago.innerText = "Guardando...";
 
             try {
+                const fechaHoyStr = obtenerFechaHoy();
                 const prestamoRef = doc(db, "prestamos", idPrestamoSeleccionado);
+                
                 const cuotasActualizadas = datosCompletosPrestamo.cuotas_detalle.map(cuota => {
-                    if (cuota.numero === numeroCuotaSeleccionada) {
+                    // Validamos tanto cuota.numero como cuota.numero_cuota por seguridad
+                    const nCuota = cuota.numero || cuota.numero_cuota || cuota.id_cuota;
+                    
+                    if (nCuota === numeroCuotaSeleccionada) {
                         const abonoPrevio = cuota.monto_abonado || 0;
                         const nuevoMontoAbonado = abonoPrevio + montoPago;
 
-                        // LOGICA DE ABONOS PARCIALES:
                         if (nuevoMontoAbonado >= cuota.monto_cuota) {
                             cuota.status = 'Pagado';
                         } else {
-                            cuota.status = 'Abonado'; // Mantiene la cuota abierta
+                            cuota.status = 'Abonado';
                         }
+                        
                         cuota.monto_abonado = nuevoMontoAbonado;
+                        cuota.fecha_pago = fechaHoyStr; // 📅 Guardamos el día del cobro
+                        cuota.monto_ultimo_pago_dia = montoPago; // 💰 Guardamos cuánto pagó hoy específicamente
                     }
                     return cuota;
                 });
 
-                // Actualizamos Firebase (CORREGIDO: prestamoRef en vez de prestRef)
+                // Guardamos en Firebase
                 await updateDoc(prestamoRef, { cuotas_detalle: cuotasActualizadas });
-
-                // Actualizamos totales en la vista local
-                recaudado += montoPago;
-                porCobrar -= montoPago;
-                document.getElementById('total-recaudado').innerText = `$${recaudado.toFixed(2)}`;
-                document.getElementById('total-por-cobrar').innerText = `$${porCobrar.toFixed(2)}`;
-
-                // Modificamos estatus en la tarjeta
-                document.getElementById(`btn-${idPrestamoSeleccionado}`).style.display = "none";
-                document.getElementById(`badge-${idPrestamoSeleccionado}`).style.display = "block";
-                document.getElementById(`card-${idPrestamoSeleccionado}`).classList.add('pagado');
 
                 alert("¡Cobro guardado con éxito en la nube!");
                 cerrarModalCobro();
-                await cargarCobrosDelDia(); // Recarga limpio
+                
+                // Recarga la lista completa recalculando los totales reales desde Firebase
+                await cargarCobrosDelDia(); 
 
             } catch (error) {
                 console.error("Error al procesar el cobro: ", error);
@@ -499,5 +216,3 @@
             }
         }
     </script>
-</body>
-</html>
